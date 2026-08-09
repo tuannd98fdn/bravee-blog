@@ -41,3 +41,25 @@
 - **Decision**: `.agents/` folder with ARCHITECTURE.md, DECISION_LOG.md, PROGRESS.md, AGENTS.md
 - **Alternatives**: Single README, external tool
 - **Reason**: Lightweight, Git-native, AI reads automatically per session
+
+## Decision #7: Keyword-based RAG prompt injection instead of Tool Calling
+- **Date**: 2026-08-09
+- **Context**: Gemini 3.5 requires `thought_signature` when calling tools, which crashes in older AI SDK versions.
+- **Decision**: Replaced all Tool Calling with keyword-based fuzzy search RAG using Fuse.js. Relevant post descriptions and summaries are dynamically injected into the system prompt.
+- **Alternatives**: Upgrade Vercel AI SDK to v4 (blocked by Next.js 16.3 / React 19 Turbopack build type mismatch errors).
+- **Reason**: 100% reliable, zero thought_signature errors, faster response times, and retains post-discovery capabilities.
+
+## Decision #8: Lightweight hand-rolled SSE and Markdown parser
+- **Date**: 2026-08-09
+- **Context**: Integrating Vercel AI SDK client hooks (`useChat` from `@ai-sdk/react` or `ai/react`) caused build and runtime errors (e.g. Hooks order mismatch under HMR, undefined input properties).
+- **Decision**: Hand-rolled a custom fetch implementation with manual SSE parser and a lightweight markdown renderer (handling lists, links, strong, em).
+- **Alternatives**: Pinned library downgrades or full page reloads.
+- **Reason**: Eliminates dependency fragility, solves Turbopack HMR bugs, compiles instantly, and stays extremely lightweight.
+
+## Decision #9: Two-tier Upstash Redis rate limiting
+- **Date**: 2026-08-09
+- **Context**: Prevent API key exhaustion on the public blog.
+- **Decision**: Implemented two ratelimiters (10 requests per minute sliding window for burst, 30 requests per hour sliding window for daily usage).
+- **Alternatives**: Simple per-minute limits, client-side block.
+- **Reason**: Robust protection against fast spam bots and sustained programmatic abuse, ensuring API keys remain within quota for regular readers.
+

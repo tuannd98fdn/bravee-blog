@@ -42,5 +42,15 @@
 - [x] Newsletter Subscription form and dummy API
 - [x] Language Filter in Blog List
 
+### ✅ Phase 5 Done
+- [x] Interactive Chatbot UI component (`Chatbot.tsx`)
+- [x] Lightweight client-side SSE Markdown renderer
+- [x] Drag & resize controls with boundary clamping
+- [x] RAG Route using Fuse.js search query logic (`/api/chat`)
+- [x] Gemini 3.5 Flash Integration
+- [x] Upstash Redis two-tier rate-limiting (10/min, 30/hr)
+- [x] Production Vercel deployment with environment variables
+
 ### 🎉 All Phases Completed!
 The architecture and implementation plan is fully realized.
+
