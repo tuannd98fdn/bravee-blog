@@ -1,0 +1,54 @@
+.callout {
+  margin: var(--space-6) 0;
+  padding: var(--space-4) var(--space-5);
+  border-radius: var(--radius-md);
+  border-left: 3px solid;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.icon {
+  font-size: var(--text-base);
+}
+
+.title {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.content {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  line-height: var(--leading-relaxed);
+}
+
+.content p {
+  margin: 0;
+}
+
+/* Variants */
+.info {
+  background: var(--accent-subtle);
+  border-color: var(--accent);
+}
+
+.tip {
+  background: var(--success-muted);
+  border-color: var(--success);
+}
+
+.warning {
+  background: var(--warning-muted);
+  border-color: var(--warning);
+}
+
+.error {
+  background: var(--error-muted);
+  border-color: var(--error);
+}
