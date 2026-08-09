@@ -1,0 +1,118 @@
+---
+title: "[Phần 2] Đắp Thêm Não Cho AI: Giải Ngố Về RAG & Vector Database"
+date: "2026-08-10"
+description: "AI rất thông minh nhưng lại mắc chứng hay quên và ảo giác. Cùng tìm hiểu cách Vector Database và RAG (Retrieval-Augmented Generation) biến LLM thành chuyên gia dữ liệu của riêng bạn."
+tags: ["AI", "RAG", "Vector Database", "Supabase", "Series AI Engineer"]
+lang: "vi"
+---
+
+Ở [Phần 1](/blog/ai-engineer-series-phan-1-tu-duy-llm), chúng ta đã biết cách dùng API để sai bảo LLM phân tích dữ liệu. Nhưng có một vấn đề lớn: **AI bị "mù" thông tin nội bộ của bạn**. 
+
+Khi bạn hỏi ChatGPT: *"Chính sách nghỉ phép của công ty tôi năm 2026 là gì?"*. Chắc chắn nó sẽ bịa ra một câu trả lời (Hallucination - Ảo giác), bởi vì dữ liệu đó không hề tồn tại trên Internet lúc nó được huấn luyện.
+
+Làm sao để giải quyết? Đưa tài liệu cho AI đọc mỗi lần hỏi? Nhưng nếu tài liệu của bạn dài tới 10,000 trang thì sao? Giới hạn Context Window (Cửa sổ ngữ cảnh) không cho phép bạn nhét toàn bộ vào một câu Prompt.
+
+Đó là lúc chúng ta cần tới **RAG (Retrieval-Augmented Generation)** và **Vector Database**.
+
+---
+
+## 1. Vector Embeddings: Biến Chữ Thành Những Con Số
+
+Để AI có thể tìm kiếm dữ liệu, chúng ta phải nói ngôn ngữ của nó: **Toán học**.
+
+**Embeddings** là quá trình chuyển đổi một đoạn văn bản (text), hình ảnh, hoặc âm thanh thành một dải các con số (vector). Ví dụ:
+- Chữ `"Chó"` -> `[0.1, 0.9, -0.2, ...]`
+- Chữ `"Mèo"` -> `[0.15, 0.85, -0.1, ...]`
+- Chữ `"Xe Tải"` -> `[-0.8, -0.1, 0.9, ...]`
+
+Để ý thấy không? Vì "Chó" và "Mèo" cùng là động vật nuôi, các con số của chúng sẽ **nằm rất gần nhau** trong không gian toán học (không gian vector). Trong khi đó, "Xe Tải" sẽ nằm ở một góc hoàn toàn khác xa.
+
+Thay vì tìm kiếm theo từ khoá (như Google hay SQL `LIKE %word%`), AI tìm kiếm bằng cách đo khoảng cách giữa các Vector. Đây gọi là **Tìm kiếm ngữ nghĩa (Semantic Search)**. Kể cả khi người dùng gõ sai chính tả hoặc dùng từ đồng nghĩa, AI vẫn tìm ra chính xác tài liệu bạn cần!
+
+---
+
+## 2. Vector Database Chứa Dữ Liệu Ở Đâu?
+
+Vì cơ sở dữ liệu truyền thống (như MySQL hay MongoDB) không được thiết kế để đo "khoảng cách" giữa hàng triệu Vector, sự trỗi dậy của AI Engineer kéo theo sự trỗi dậy của **Vector Database**.
+
+Một số Vector Database phổ biến:
+- **Pinecone / Qdrant:** Chuyên dụng cho Vector, siêu nhanh.
+- **Supabase (pgvector):** Siêu phẩm dành cho Web Dev. Nó chính là Postgres truyền thống nhưng được cài thêm extension `pgvector`. (Sean's AI Stories cực kỳ chuộng Supabase vì tính All-in-One của nó).
+
+---
+
+## 3. RAG: Đắp "Não Thứ Hai" Cho AI
+
+RAG (Retrieval-Augmented Generation) là một kỹ thuật gồm 2 giai đoạn: **Tìm kiếm (Retrieve)** và **Tạo văn bản (Generate)**. Cụ thể, khi người dùng đặt câu hỏi, quy trình sẽ diễn ra như sau:
+
+1. **Người dùng hỏi:** *"Công ty tôi cho nghỉ phép bao nhiêu ngày?"*
+2. **Retrieve (Tìm kiếm):** 
+   - Biến câu hỏi trên thành Vector.
+   - Quét qua Vector Database để tìm 5 đoạn tài liệu **nằm gần câu hỏi này nhất** trong không gian toán học.
+   - Database trả về đoạn văn: *"Nhân viên công ty A được nghỉ 15 ngày/năm..."*
+3. **Augment (Bổ sung):** Nhồi đoạn văn vừa tìm được vào chung với câu hỏi của người dùng để tạo thành một Prompt mới.
+4. **Generate (Tạo sinh):** Gửi Prompt mới này cho LLM.
+   - Prompt gởi đi: *"Dựa vào tài liệu sau [Nhân viên công ty A được nghỉ 15 ngày/năm], hãy trả lời câu hỏi [Công ty tôi cho nghỉ phép bao nhiêu ngày?]"*
+   - LLM trả lời: *"Công ty bạn cho phép nghỉ 15 ngày mỗi năm."*
+
+**Đó chính là RAG!** Cực kỳ đơn giản nhưng mạnh mẽ. LLM không còn "đoán mò" nữa, nó trả lời dựa trên những dữ liệu (Context) bạn mớm cho nó.
+
+---
+
+## 4. Thực Hành: RAG Cơ Bản Với Supabase & Vercel AI SDK
+
+Bạn không cần CS Degree để làm RAG. Ví dụ một đoạn code thực chiến (pseudo-code) viết bằng Typescript, kết nối với Supabase để tìm kiếm tài liệu trước khi trả lời user:
+
+```typescript
+// api/chat/route.ts
+import { generateText, embed } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!);
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+  const userQuestion = messages[messages.length - 1].content;
+
+  // 1. Biến câu hỏi thành Vector (Embeddings)
+  const { embedding } = await embed({
+    model: openai.embedding('text-embedding-3-small'),
+    value: userQuestion,
+  });
+
+  // 2. Tìm kiếm (Retrieve) trong Supabase
+  const { data: documents } = await supabase.rpc('match_documents', {
+    query_embedding: embedding,
+    match_threshold: 0.78, // Độ khớp tối thiểu
+    match_count: 3         // Lấy 3 tài liệu gần nhất
+  });
+
+  // 3. Nối tài liệu vào ngữ cảnh (Augment)
+  const context = documents.map(doc => doc.content).join('\n');
+  const systemPrompt = `Bạn là trợ lý ảo. Hãy trả lời câu hỏi dựa trên tài liệu sau:\n\n${context}`;
+
+  // 4. Tạo câu trả lời (Generate)
+  const result = await generateText({
+    model: openai('gpt-4o-mini'),
+    messages: [
+      { role: 'system', content: systemPrompt },
+      ...messages
+    ],
+  });
+
+  return new Response(result.text);
+}
+```
+
+Đây là cách những Startup AI hàng chục triệu đô đang làm để xây dựng các "Chat PDF", "Trợ lý nội bộ doanh nghiệp" hay "AI Customer Service".
+
+---
+
+## Tổng Kết Phần 2
+
+Ở bài này, chúng ta đã biến AI từ một gã thông minh nhưng mù tịt thông tin nội bộ, thành một nhân viên am hiểu 10,000 trang tài liệu công ty nhờ **Vector Database** và **RAG**.
+
+Tuy nhiên, RAG ở mức độ này vẫn chỉ là "đọc" dữ liệu thụ động. Nó không thể *gửi email cho sếp xin nghỉ phép giúp bạn* hay *đặt lịch họp vào chiều thứ Sáu*. 
+
+Để AI có tay chân thực sự, hãy đón xem **[Phần 3] LLM Frameworks & Cấp vũ khí cho AI (Function Calling)**.

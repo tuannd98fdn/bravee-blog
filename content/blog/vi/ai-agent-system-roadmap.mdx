@@ -1,0 +1,80 @@
+---
+title: "Lộ Trình Học Và Tự Xây Dựng AI Agent System Từ Con Số 0"
+date: "2026-08-09"
+description: "Tổng hợp kiến thức thực chiến từ kênh Sean's AI Stories: System Design, Loop Engineering, Memory (RAG) và cách xây dựng AI Agent mà không cần bằng cấp CS."
+tags: ["AI", "Agent", "Learning", "System Design", "Career"]
+lang: "vi"
+---
+
+Nếu bạn theo dõi không gian công nghệ thời gian gần đây, chắc hẳn bạn đã nghe đến từ khoá **AI Agent**. Không còn chỉ là những chatbot hỏi-đáp thụ động, Agent giờ đây có khả năng tự suy luận, tự gọi công cụ (function calling), và tự động hóa các quy trình phức tạp (workflow automation).
+
+Mới đây, mình đã cày cuốc qua một loạt series video cực chất lượng từ kênh YouTube [Sean‘s AI Stories and AutoManus](https://www.youtube.com/@seans-ai-stories). Những gì Sean chia sẻ không nặng tính hàn lâm, mà tập trung 100% vào **thực chiến** (hands-on) và tư duy **System Design**. Đáng ngạc nhiên là, bạn có thể build được những hệ thống đồ sộ này mà không nhất thiết phải có bằng cấp về Khoa học Máy tính (No CS Degree needed).
+
+Dưới đây là bản tổng hợp lộ trình cốt lõi nhất để bạn tự tin xây dựng AI Agent cho riêng mình.
+
+---
+
+## 1. Core Kiến Trúc Của Một AI Agent (System Design)
+
+Thay vì đâm đầu vào code, thứ đầu tiên bạn cần nắm là **Kiến trúc Hệ thống (System Design)**. Theo các hướng dẫn từ Sean, một AI Agent cơ bản bao gồm 4 khối chính:
+
+- **Bộ Não (LLM):** Sử dụng các mô hình như Claude 3.5, GPT-4o, hoặc Kimi.
+- **Agent Harness (Bộ Khung):** Môi trường chứa Agent, nơi định nghĩa cách Agent tương tác với thế giới bên ngoài.
+- **Memory (Hệ thống Trí nhớ):** Nơi Agent lưu trữ ngữ cảnh ngắn hạn và dài hạn (thường dùng Vector Database).
+- **Tools/Skills (Kỹ năng):** Các API hoặc hàm mà Agent có thể gọi (ví dụ: gửi email, lướt web, truy vấn database).
+
+**Mẹo nhỏ:** Hãy phân biệt giữa **Agent Swarm** (một bầy Agent nhỏ, giao tiếp linh hoạt) và **Agent Teams** (một đội ngũ Agent phân chia rõ vai trò như Manager, Coder, Reviewer). Tuỳ bài toán mà bạn chọn kiến trúc phù hợp.
+
+---
+
+## 2. Loop Engineering & MCP (Model Context Protocol)
+
+Có lẽ khái niệm "ăn tiền" nhất mà mình học được là **Loop Engineering**. 
+
+Thay vì chỉ prompt 1 lần và đợi kết quả, chúng ta thiết kế một "vòng lặp" (Loop) để Agent:
+1. **Suy nghĩ (Think)**
+2. **Hành động (Act - Gọi Tool)**
+3. **Đánh giá (Eval - Kiểm tra kết quả có đúng không)**
+4. **Lặp lại (Loop) cho đến khi hoàn thành mục tiêu.**
+
+Gần đây, sự ra đời của **MCP (Model Context Protocol)** từ Anthropic càng làm cho việc gắn Tool vào Agent trở nên dễ dàng hơn. Nhờ MCP, Agent (như Claude hoặc Cursor) có thể đọc dữ liệu từ Notion, Github, hay máy tính cá nhân của bạn một cách trực tiếp biến chúng trở thành "bộ não thứ hai" thực sự.
+
+---
+
+## 3. Hệ Thống Trí Nhớ: Semantic & Episodic Memory (RAG)
+
+Để Agent không bị "mất trí nhớ" sau mỗi phiên chat, bạn phải thiết kế hệ thống **Memory**. Có 2 loại chính:
+- **Semantic Memory (Trí nhớ Ngữ nghĩa):** Những kiến thức chung, tài liệu, quy trình của doanh nghiệp. Thường được giải quyết bằng **RAG** (Retrieval-Augmented Generation) kết hợp với **Vector Database** (như Supabase pgvector).
+- **Episodic Memory (Trí nhớ Chắp vá/Sự kiện):** Lịch sử tương tác của Agent với User. Ví dụ: *"Hôm qua User bảo User thích uống cà phê không đường"*.
+
+Với Supabase, bạn có thể thiết lập hệ thống RAG chỉ trong vòng chưa tới 20 phút.
+
+---
+
+## 4. Bộ Công Cụ Thực Chiến 10x (Tech Stack)
+
+Triết lý của Sean rất rõ ràng: **"Vibe Coding"**. Nghĩa là bạn không cần phải tự gõ từng dòng code boilerplate, hãy để AI lo phần đó.
+
+Tech stack tối thượng để ra mắt (launch) một ứng dụng AI SaaS hiện nay gồm có:
+- **Cursor AI / Claude Code:** Trợ lý lập trình (AI Coding Agent).
+- **Supabase:** Chân ái của Backend. Nó lo trọn gói từ PostgreSQL, Vector Database, Authentication (Google Login), Row Level Security (RLS) đến Edge Functions.
+- **Next.js & Vercel:** Xây dựng Full-stack App và deploy trong chớp mắt.
+- **n8n / LangChain / Waku:** Framework/Công cụ để "nối" các Agent lại với nhau.
+
+Đừng tốn thời gian tự viết hệ thống Auth hay cấu hình Server thủ công (DevOps). Hãy uỷ thác 80% công việc cho Cursor và tập trung 20% vào Logic Business & System Design!
+
+---
+
+## Action Items: Bạn Nên Bắt Đầu Từ Đâu?
+
+Nếu bạn cảm thấy ngợp trước một biển thông tin, đây là bài tập nhỏ để bắt đầu:
+
+1. Đăng ký tài khoản **Supabase** và **Vercel** (Miễn phí).
+2. Tải **Cursor AI**.
+3. Thử yêu cầu Cursor: *"Tạo cho tôi một ứng dụng Next.js, có đăng nhập bằng Google qua Supabase"*.
+4. Sau khi chạy thành công, bước tiếp theo là nhúng một **Agent** nhỏ bằng API của Claude hoặc Kimi, và cho phép Agent đó ghi dữ liệu vào Supabase.
+
+Thực hành là cách học nhanh nhất. Chúc bạn sớm xây dựng được những "nhân viên AI" mẫn cán cho riêng mình!
+
+---
+*(Cảm hứng bài viết từ chuỗi series của Sean's AI Stories)*

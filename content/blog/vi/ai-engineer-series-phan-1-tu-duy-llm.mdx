@@ -1,0 +1,114 @@
+---
+title: "[Phần 1] Sự Trỗi Dậy Của AI Engineer & Bẻ Khoá Tư Duy LLM"
+date: "2026-08-09"
+description: "Mở đầu chuỗi series AI Engineer Thực Chiến: Định hình lại tư duy cho Web/Mobile Dev, hiểu rõ AI Engineer khác gì với Data Scientist, và nghệ thuật Prompt Engineering."
+tags: ["AI", "LLM", "Prompt Engineering", "Series AI Engineer"]
+lang: "vi"
+---
+
+Nếu bạn là một Web hay Mobile Developer, chắc hẳn bạn đã không ít lần tự hỏi: *"Liệu mình có bị AI thay thế không?"* hoặc *"Mình không giỏi Toán, liệu có theo được làn sóng AI này không?"*.
+
+Tin vui là: Trí tuệ nhân tạo (AI) đang trải qua một sự chuyển dịch lớn. Thế giới hiện tại không chỉ khát những Data Scientist cặm cụi huấn luyện mô hình (Training Models), mà họ khát những **AI Engineer** – những người biết cách *ứng dụng* các mô hình có sẵn vào thế giới thực.
+
+Bài viết này là Phần 1 trong chuỗi Series **Lộ Trình AI Engineer Thực Chiến**. Chúng ta sẽ cùng nhau "bẻ khoá" tư duy cốt lõi để một lập trình viên truyền thống có thể nhảy sang sân chơi AI.
+
+---
+
+## 1. AI Engineer Khác Gì Với Data Scientist?
+
+Hãy tưởng tượng AI giống như việc chế tạo một động cơ xe hơi:
+- **Data Scientist / ML Engineer:** Là những kỹ sư cơ khí. Họ thiết kế ra cỗ máy, đào sâu vào Neural Networks, tính toán Weights & Biases, xử lý hàng Terabyte dữ liệu để train ra mô hình (LLM) như GPT-4 hay Claude 3.5. Công việc này đòi hỏi nền tảng Toán học, Xác suất thống kê cực mạnh.
+- **AI Engineer:** Là những nhà thiết kế ô tô và người lái xe. Chúng ta không tự chế tạo động cơ, chúng ta **mua** động cơ (sử dụng OpenAI API, Anthropic API) và lắp ráp nó vào bộ khung phần mềm của mình (Next.js, Node.js). Chúng ta thiết kế ghế ngồi (UI/UX), thêm tính năng tự lái (Agent Frameworks), và đảm bảo chiếc xe chạy mượt mà (LLMOps).
+
+**Bạn không cần bằng Tiến sĩ Khoa học Máy tính để làm AI Engineer.** Bạn chỉ cần tư duy phần mềm (Software Engineering) tốt, và một chút "nghệ thuật" giao tiếp với AI.
+
+---
+
+## 2. Bẻ Khoá Tư Duy Về LLM (Large Language Models)
+
+Khi gọi API của một LLM, bạn không gọi một hàm logic thông thường như `getUser()`. Bạn đang giao tiếp với một thực thể có tính "xác suất".
+
+### Tokens Không Phải Là Từ (Words)
+LLM không đọc chữ cái, chúng đọc **Tokens**. 
+Một token tương đương khoảng 4 ký tự trong tiếng Anh (khoảng 3/4 một từ). Nhưng trong tiếng Việt, do ngôn ngữ có dấu, một từ có thể tốn từ 2 đến 3 tokens. Đó là lý do dùng AI bằng tiếng Việt thường tốn chi phí API hơn tiếng Anh.
+
+### Context Window (Cửa Sổ Ngữ Cảnh)
+Giống như trí nhớ ngắn hạn của con người. Nếu một model có Context Window là `128K tokens`, nghĩa là nó có thể "đọc hiểu" cùng lúc một cuốn sách khoảng 300 trang. Vượt qua giới hạn này, AI sẽ bị "tràn bộ nhớ" và quên mất những gì bạn nói lúc đầu.
+
+### Temperature & Top-P (Độ Sáng Tạo)
+Khi gọi API, bạn sẽ gặp 2 tham số quan trọng:
+- **Temperature (0.0 đến 2.0):** Càng thấp (0.0), AI càng trả lời chính xác, máy móc (phù hợp cho code, trích xuất dữ liệu). Càng cao (0.8+), AI càng sáng tạo, bay bổng (phù hợp viết blog, thơ).
+- **Top-P:** Cũng tương tự Temperature nhưng can thiệp vào xác suất chọn từ. Lời khuyên: Chỉ nên chỉnh 1 trong 2 (chỉnh Temperature hoặc Top-P), đừng chỉnh cả hai.
+
+---
+
+## 3. "Nghệ Thuật" Prompt Engineering Thực Chiến
+
+Quên đi những bài báo "bán khóa học Prompt 99$". Làm AI Engineer, Prompting chỉ xoay quanh 3 kỹ thuật cốt lõi:
+
+### 1. Zero-shot Prompting
+Hỏi trực tiếp không cần ví dụ.
+> *"Phân tích cảm xúc của câu sau: 'Tôi rất bực mình vì app liên tục văng'. (Positive/Negative/Neutral)"*
+
+### 2. Few-shot Prompting
+Đưa ra một vài ví dụ (shots) để định dạng câu trả lời cho AI. Rất hữu ích khi bạn muốn output trả về định dạng JSON nghiêm ngặt để Backend dễ parse.
+> *"Phân tích cảm xúc và trả về đúng định dạng JSON:*
+> *Input: Tôi thích app này*
+> *Output: \{ "sentiment": "positive" \}"*
+>
+> *Input: App dở tệ*
+> *Output: \{ "sentiment": "negative" \}"*
+
+### 3. Chain-of-Thought (CoT)
+Khuyến khích AI "suy nghĩ từng bước một" trước khi chốt đáp án. Kỹ thuật này giảm tỉ lệ AI nói bậy (Hallucination) lên đến 80%.
+> *"Hãy giải bài toán này. **Hãy suy nghĩ từng bước một (Think step by step)**, giải thích logic của bạn, sau đó mới đưa ra đáp án cuối cùng."*
+
+---
+
+## 4. Thực Hành: Viết Script Gắn Nhãn Dữ Liệu (Sentiment Analysis)
+
+Thay vì phải train một model AI phức tạp để nhận diện bình luận tiêu cực, đây là cách AI Engineer làm điều đó trong 5 phút bằng TypeScript và OpenAI API.
+
+```typescript
+// script.ts
+import OpenAI from "openai";
+
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+async function analyzeSentiment(text: string) {
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini", // Model giá rẻ, tốc độ cao
+    temperature: 0.0,     // Để 0.0 để kết quả luôn ổn định
+    messages: [
+      {
+        role: "system",
+        content: `Bạn là một trợ lý phân tích dữ liệu. 
+        Nhiệm vụ của bạn là phân tích cảm xúc bình luận của khách hàng.
+        Chỉ trả về 1 từ duy nhất: POSITIVE, NEGATIVE, hoặc NEUTRAL. Không giải thích gì thêm.`
+      },
+      {
+        role: "user",
+        content: `Bình luận: "${text}"`
+      }
+    ]
+  });
+
+  return completion.choices[0].message.content;
+}
+
+// Chạy thử
+const result = await analyzeSentiment("Trải nghiệm app khá giật lag, mong dev update");
+console.log(result); // In ra: NEGATIVE
+```
+
+Chỉ với 20 dòng code, bạn đã thay thế hoàn toàn một team Data Science tốn hàng tuần ráng cào dữ liệu và train mô hình!
+
+---
+
+## Tổng Kết Phần 1
+Đừng sợ AI, hãy biến nó thành một API gọi hàm. Một khi bạn hiểu cách LLM hoạt động (Tokens, Context, Temperature) và cách kiểm soát nó (Prompting), bạn đã đặt một chân vào thế giới của AI Engineer.
+
+Tuy nhiên, LLM hiện tại vẫn là một chiếc hộp rỗng (không biết kiến thức riêng của công ty bạn). 
+Ở **[Phần 2]**, chúng ta sẽ tìm hiểu cách đắp thêm "Não" cho AI bằng công nghệ **RAG** và **Vector Database** (như Supabase pgvector) để AI có thể đọc hiểu cả ngàn trang tài liệu PDF của doanh nghiệp bạn. 
+
+Hẹn gặp lại bạn ở bài tiếp theo!

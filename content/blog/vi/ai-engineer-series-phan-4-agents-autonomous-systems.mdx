@@ -1,0 +1,66 @@
+---
+title: "[Phần 4] AI Agents & Hệ Thống Tự Trị: Bí Mật Của Loop Engineering"
+date: "2026-08-12"
+description: "Làm thế nào để AI tự lên kế hoạch, tự phát hiện lỗi và tự sửa sai? Khám phá sức mạnh của ReAct Prompting, Loop Engineering và Multi-Agent Systems."
+tags: ["AI", "Agent", "ReAct", "Loop Engineering", "Series AI Engineer"]
+lang: "vi"
+---
+
+Trong **[Phần 3](/blog/ai-engineer-series-phan-3-function-calling)**, chúng ta đã trang bị "vũ khí" (Function Calling) cho AI. Tuy nhiên, nếu bạn chỉ đưa cho AI một mục tiêu mơ hồ như: *"Hãy tìm kiếm trên mạng về sự kiện ra mắt Kimi K2, sau đó viết một bài báo cáo và gửi qua email cho tôi"*, cơ chế Function Calling thông thường sẽ thất bại.
+
+Tại sao? Vì bài toán này đòi hỏi nhiều bước liên tiếp nhau. AI cần phải lướt web (bước 1) -> đọc kết quả (bước 2) -> viết báo cáo (bước 3) -> gọi API gửi email (bước 4).
+
+Làm sao để AI tự động thực hiện chuỗi hành động này mà không cần con người can thiệp từng bước? Chào mừng bạn đến với khái niệm **Autonomous Systems (Hệ thống tự trị)**.
+
+---
+
+## 1. Loop Engineering & Vòng Lặp ReAct
+
+Bạn từng nghe về **Prompt Engineering** (kỹ nghệ viết prompt). Nhưng xu hướng hiện tại của các siêu kỹ sư AI là **Loop Engineering** (kỹ nghệ vòng lặp).
+
+Bản chất của Loop Engineering được lấy cảm hứng từ 논문 (Paper) nổi tiếng có tên là **ReAct (Reasoning and Acting)**. Nghĩa là chúng ta ép LLM phải "Suy nghĩ" (Reasoning) trước khi "Hành động" (Acting).
+
+Vòng lặp ReAct hoạt động như sau:
+1. **Thought (Suy nghĩ):** AI phân tích xem cần phải làm gì tiếp theo. *"Mình cần tìm kiếm thông tin về Kimi K2."*
+2. **Action (Hành động):** AI quyết định gọi Tool `google_search` với tham số là *"Kimi K2 launch date"*.
+3. **Observation (Quan sát):** Developer nhận Action của AI, chạy Google Search, rồi ném kết quả (Observation) ngược lại cho AI.
+4. **Lặp lại (Loop):** AI đọc kết quả. Nếu thấy đủ thông tin, nó đi tới bước gửi email. Nếu thấy kết quả Google trả về là rác, nó sẽ quay lại bước 1: *"Kết quả không đúng, mình cần tìm kiếm với từ khoá khác."*
+
+Nhờ cơ chế này, Agent trở nên "lì lợm" hơn. Khi gặp lỗi (ví dụ API sập), nó có thể tự đọc log lỗi và nghĩ cách thử lại (Retry) hoặc dùng cách khác.
+
+---
+
+## 2. Các Mẫu Thiết Kế (Patterns) Của AI Agent
+
+Khi bài toán ngày càng phức tạp, việc nhồi nhét tất cả công việc cho một con Agent duy nhất sẽ khiến nó bị quá tải ngữ cảnh (Context Overflow) và trở nên "ngáo". Giải pháp là **Multi-Agent Systems (Hệ thống đa đặc vụ)**. 
+
+Có hai trường phái thiết kế Multi-Agent phổ biến nhất hiện nay:
+
+### a. Agent Swarm (Bầy Đàn)
+- **Cơ chế:** Có nhiều Agent nhỏ, mỗi Agent là một chuyên gia (Ví dụ: SearchAgent, CodeAgent, WriterAgent). Các Agent này hoạt động ngang hàng (peer-to-peer) và có thể tự do gọi nhau (hand-off) khi cần.
+- **Ưu điểm:** Cực kỳ linh hoạt, có thể tự động thích nghi với nhiều loại công việc không định trước.
+- **Nhược điểm:** Dễ rơi vào vòng lặp vô tận (Agent này đẩy việc cho Agent kia mãi mà không chịu chốt kết quả). Đôi khi mất kiểm soát.
+
+### b. Hierarchical Teams (Mô Hình Công Ty)
+- **Cơ chế:** Có một Agent "Trưởng phòng" (Orchestrator / Manager). Quản lý này sẽ nhận task từ User, tự phân chia thành các task nhỏ (Sub-tasks) và giao cho các Agent "Nhân viên" làm. Nhân viên làm xong báo cáo lại cho Quản lý. Quản lý tổng hợp rồi báo cho User.
+- **Ưu điểm:** Tính ổn định cực cao, dễ debug, biết chính xác luồng chạy (Workflow).
+- **Phù hợp cho:** Doanh nghiệp, các quy trình nghiệp vụ (Business Logic) khắt khe.
+
+---
+
+## 3. Các Framework Xây Dựng Multi-Agent
+
+Khác với Vercel AI SDK (tập trung làm UI cho một Agent), nếu bạn muốn xây dựng mô hình bầy đàn nhiều Agent, hãy cân nhắc sử dụng:
+- **CrewAI (Python):** Framework cực kỳ nổi tiếng để dựng mô hình Hierarchical Teams. Bạn gán Role (vai trò), Goal (mục tiêu) và Story (bối cảnh) cho từng Agent.
+- **LangGraph (Python/JS):** Của nhà LangChain. Đúng như tên gọi "Graph", nó cho phép bạn thiết kế luồng đi của các Agent dưới dạng Biểu đồ có hướng (Directed Graph). Nó khó học hơn CrewAI nhưng mang lại khả năng kiểm soát tuyệt đối từng Node và Edge của hệ thống.
+- **Waku / AutoGen:** Phù hợp hơn cho các tác vụ mang tính nghiên cứu, giao tiếp phi tuyến tính.
+
+---
+
+## Tổng Kết Phần 4
+
+Từ một mô hình ngôn ngữ (LLM) thụ động, qua 4 phần, chúng ta đã trang bị cho nó: **Não** (RAG), **Tay Chân** (Function Calling), và bây giờ là **Hệ Điều Hành** (ReAct & Loop Engineering) để tự quản lý bản thân.
+
+Thế nhưng, thế giới công nghệ không bao giờ đứng im. Cuối năm ngoái, Anthropic (Công ty mẹ của Claude) vừa tung ra một cú hích làm rung chuyển toàn bộ cách chúng ta kết nối Agent với thế giới bên ngoài.
+
+Hãy chuẩn bị tinh thần cho **[Phần 5] Siêu Trí Nhớ (Memory) & Giao thức MCP**, nơi chúng ta sẽ khám phá xem làm thế nào một AI có thể đọc được tin nhắn Slack, lục lọi Github, hay truy vấn Notion của bạn chỉ bằng 1 giao thức duy nhất!

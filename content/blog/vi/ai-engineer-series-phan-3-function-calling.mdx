@@ -1,0 +1,106 @@
+---
+title: "[Phần 3] Cấp Vũ Khí Cho AI: Function Calling & LLM Frameworks"
+date: "2026-08-11"
+description: "Chatbot chỉ biết nói chuyện. Agent biết hành động. Tìm hiểu cách biến LLM thành một trợ lý thực thụ thông qua Function Calling (Agent Harness) và lựa chọn LLM Framework phù hợp."
+tags: ["AI", "Agent", "Function Calling", "Vercel AI SDK", "Series AI Engineer"]
+lang: "vi"
+---
+
+Nếu bạn đã đọc **[Phần 2](/blog/ai-engineer-series-phan-2-rag-vector-db)**, AI của bạn giờ đây đã có "Não" (nhờ RAG) để đọc tài liệu nội bộ. Nhưng nếu sếp yêu cầu: *"Gửi email tóm tắt tài liệu này cho team Sales giúp tôi"*, con AI của bạn sẽ bất lực và nói: *"Tôi chỉ là một mô hình ngôn ngữ AI, tôi không có khả năng gửi email."*
+
+Một AI chỉ biết nói chuyện được gọi là **Chatbot**. 
+Một AI biết *hành động* (đọc API, lướt web, gửi email, xoá database) được gọi là **Agent**.
+
+Khoảng cách giữa Chatbot và Agent chính là **Function Calling** (hay còn gọi là Tool Calling).
+
+---
+
+## 1. Function Calling Là Gì?
+
+Bản chất LLM (Large Language Model) được giam trong một chiếc hộp kín. Nó không có tay chân, không có Internet. Tất cả những gì nó có là chữ đầu vào và chữ đầu ra.
+
+Vậy làm sao nó gửi được email? Bí quyết là chúng ta **không** dạy AI cách gửi email. Chúng ta dạy AI cách *yêu cầu* chúng ta gửi email thay cho nó.
+
+### Cơ chế hoạt động:
+1. **Developer:** Khai báo một danh sách các "Công cụ" (Tools) cho AI. Ví dụ: *"Này AI, tao có 1 cái hàm tên là `send_email(to, subject, body)`. Mày có thể dùng nó nếu cần."*
+2. **Người dùng hỏi:** *"Gửi email nhắc anh Tuấn đi họp chiều nay."*
+3. **AI suy nghĩ:** *"À, câu này cần gửi email. Mình không biết gửi, nhưng mình có tool `send_email`. Để mình tạo ra một cục JSON chứa tham số truyền vào."*
+4. **AI trả về (thay vì chữ thông thường):** 
+   `{"name": "send_email", "arguments": {"to": "tuan@example.com", "subject": "Họp chiều nay", "body": "Nhắc anh đi họp chiều nay."}}`
+5. **Developer (Code của bạn):** Đọc được cục JSON này, lấy tham số đó quăng vào hàm `Nodemailer` hoặc `Resend` để gửi email thật. Xong xuôi, bạn báo lại cho AI: *"Gửi thành công rồi đó!"*
+6. **AI trả lời user:** *"Tôi đã gửi email cho anh Tuấn thành công!"*
+
+Kỹ thuật bọc LLM vào giữa các đoạn code thực thi như vậy, giới học thuật hay gọi là **Agent Harness** (Đeo dây cương cho AI).
+
+---
+
+## 2. LLM Frameworks: Trận Chiến Python vs TypeScript
+
+Để làm được quy trình Function Calling ở trên, nếu bạn tự code từ đầu bằng API thuần của OpenAI, bạn sẽ phải viết rất nhiều đoạn if-else parse JSON rườm rà. Đó là lý do các **LLM Frameworks** ra đời.
+
+Hiện tại có 2 phe phái chính:
+
+### 1. Phe Python (LangChain, LlamaIndex)
+- Rất mạnh về RAG, Data pipeline và nghiên cứu.
+- Lợi thế: Hệ sinh thái Python là quê hương của AI.
+- Nhược điểm: Nặng nề, đôi khi bị "Over-engineered" (thiết kế quá phức tạp cho những việc đơn giản). Khó tích hợp trơn tru vào Web UI.
+
+### 2. Phe TypeScript (Vercel AI SDK, LangChain.js)
+- Rất mạnh về xây dựng Web App (SaaS) và UX.
+- Lợi thế: **Vercel AI SDK** đang là vua của mảng này. Nó hỗ trợ React Server Components (RSC), có thể stream thẳng UI (Component) từ server xuống client mượt như nước.
+- Dân Tech quốc tế hiện tại chuộng làm Web AI bằng Next.js + Vercel AI SDK vì tốc độ ra mắt sản phẩm vô địch.
+
+---
+
+## 3. Thực Hành: Cấp Tool "Xem Thời Tiết" Bằng Vercel AI SDK
+
+Cùng xem đoạn code TypeScript dưới đây, bạn sẽ thấy việc cấp vũ khí cho AI dễ đến mức nào:
+
+```typescript
+// api/chat/route.ts
+import { streamText, tool } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod'; // Thư viện validate kiểu dữ liệu
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = await streamText({
+    model: openai('gpt-4o-mini'),
+    messages,
+    // 1. Cấp vũ khí (Tools) cho AI ở đây
+    tools: {
+      getWeather: tool({
+        description: 'Lấy thời tiết hiện tại của một thành phố',
+        parameters: z.object({
+          city: z.string().describe('Tên thành phố (ví dụ: Hà Nội)'),
+        }),
+        execute: async ({ city }) => {
+          // 2. Viết code thực thi thật (Gọi API thời tiết)
+          const temp = Math.floor(Math.random() * 10) + 25; // Fake nhiệt độ từ 25-35
+          return {
+            city,
+            temperature: temp,
+            condition: 'Nắng nhẹ'
+          };
+        },
+      }),
+    },
+  });
+
+  // Streaming kết quả về cho Frontend
+  return result.toDataStreamResponse();
+}
+```
+
+Nếu User chat: *"Thời tiết Hà Nội nay sao em?"*, con AI sẽ tự động nhìn vào danh sách Tools, thấy tool `getWeather` phù hợp. Nó tự trích xuất chữ `Hà Nội` gán vào tham số `city`. Hàm `execute` chạy, và AI lấy kết quả để báo lại cho User: *"Hà Nội hiện tại 30 độ và nắng nhẹ ạ!"*.
+
+---
+
+## Tổng Kết Phần 3
+Với **Function Calling**, bạn đã đập tan bức tường ngăn cách giữa thế giới ảo của AI và thế giới thực. AI của bạn giờ đây có thể thao tác với Database, gửi tin nhắn Slack, hay bấm nút thanh toán Stripe.
+
+Nhưng khoan đã, mọi thứ trên đây vẫn diễn ra theo kiểu "User ra lệnh -> AI làm 1 việc -> Báo cáo".
+Điều gì xảy ra nếu bạn đưa cho AI một mục tiêu mơ hồ kiểu: *"Tìm công ty bán cà phê gần đây, so sánh giá, và viết 1 bản báo cáo lưu vào Notion"*?
+
+Lúc này, AI cần phải biết tự chia nhỏ công việc, lên kế hoạch, kiểm tra lỗi và gọi nhiều Tool liên tiếp nhau. Hãy đón xem **[Phần 4] AI Agents & Hệ thống tự trị (Autonomous Systems)** để khám phá vòng lặp ReAct đỉnh cao nhé!

@@ -1,0 +1,71 @@
+---
+title: "[Phần 5] Siêu Trí Nhớ (Memory) & Cú Hích MCP Từ Anthropic"
+date: "2026-08-13"
+description: "AI rất thông minh nhưng lại hay quên. Khám phá cách xây dựng hệ thống trí nhớ (Semantic & Episodic) và chuẩn giao tiếp mới nhất MCP (Model Context Protocol)."
+tags: ["AI", "Agent", "MCP", "Memory", "Series AI Engineer"]
+lang: "vi"
+---
+
+Hãy tưởng tượng bạn thuê một trợ lý ảo siêu giỏi. Ngày đầu tiên, bạn dặn nó: *"Nhớ là tôi thích uống cà phê không đường nhé"*. Nó vâng dạ. Ngày hôm sau, bạn bảo nó đặt giùm ly cà phê, nó lại mua cà phê nhiều đường. Bạn nổi điên.
+
+Đó chính xác là cách các AI Agents hiện tại đang hoạt động nếu thiếu đi một hệ thống **Trí nhớ (Memory)**.
+
+Trong **[Phần 4](/blog/ai-engineer-series-phan-4-agents-autonomous-systems)**, chúng ta đã biến Agent thành những cỗ máy biết tự hành động. Nhưng để chúng trở nên "người" hơn và làm việc với bạn lâu dài, chúng phải biết cách ghi nhớ.
+
+---
+
+## 1. Hai Loại Trí Nhớ Của AI Agent
+
+Trong kiến trúc của một Agent chuẩn mực, hệ thống trí nhớ thường được chia làm 2 loại, giống hệt với não bộ con người:
+
+### a. Semantic Memory (Trí Nhớ Ngữ Nghĩa / Kiến Thức)
+- **Định nghĩa:** Đây là những kiến thức thực tế, tài liệu, quy trình, hay sự kiện khách quan.
+- **Ví dụ:** *"Công ty X thành lập năm 2020", "Hàm `fetchData` yêu cầu token"*.
+- **Cách lưu trữ:** Thường sử dụng **Vector Database** (như Supabase pgvector) và truy xuất bằng RAG. Càng có nhiều tài liệu, trí nhớ ngữ nghĩa của Agent càng phong phú.
+
+### b. Episodic Memory (Trí Nhớ Sự Kiện / Chắp Vá)
+- **Định nghĩa:** Đây là lịch sử tương tác, những cuộc trò chuyện trong quá khứ giữa Agent và User, hoặc những tuỳ chỉnh cá nhân của User.
+- **Ví dụ:** *"User A thường thích cách xưng hô trang trọng", "Hôm qua User B vừa phàn nàn về lỗi giao diện"*.
+- **Cách lưu trữ:** Thường được lưu dưới dạng Graph Database hoặc Document DB (như MongoDB) kết hợp với Vector. AI sẽ tự động phân tích cuộc trò chuyện, trích xuất ra các *Entity* (Thực thể) và lưu lại các "mẩu" thông tin này.
+
+Khi kết hợp cả hai loại trí nhớ, Agent của bạn không chỉ thông minh, mà nó còn **thấu hiểu** người dùng như một người bạn cũ.
+
+---
+
+## 2. Bài Toán Tích Hợp (Integration Hell)
+
+Nếu muốn AI đọc được lịch sử Jira, phân tích file thiết kế trên Figma, tóm tắt tài liệu Notion, và đọc code trên Github... Bạn sẽ phải làm gì?
+
+Theo cách làm cũ, bạn phải:
+1. Đọc tài liệu API của Jira, Figma, Notion, Github.
+2. Lấy API Key, setup OAuth cho từng dịch vụ.
+3. Viết hàng tá Tools (Function Calling) để Agent biết cách gọi.
+4. Mỗi khi một bên thay đổi API, code của bạn sẽ hỏng.
+
+Đây là ác mộng của mọi AI Engineer. Nó được gọi là **Integration Hell**.
+
+---
+
+## 3. Cú Hích Lịch Sử: Giao thức MCP (Model Context Protocol)
+
+Cuối năm 2024, **Anthropic** (công ty tạo ra Claude) đã tung ra một chuẩn mã nguồn mở có khả năng thay đổi luật chơi: **MCP - Model Context Protocol**.
+
+### MCP Hoạt Động Ra Sao?
+Thay vì Agent phải "chạy tới" từng ứng dụng để xin dữ liệu, **MCP** định nghĩa một chuẩn giao tiếp chung duy nhất (như cổng USB Type-C). 
+
+- Các ứng dụng (Notion, Github, Postgres, Cursor...) sẽ tự viết một cái gọi là **MCP Server**.
+- Agent của bạn chỉ cần là một **MCP Client**.
+
+Khi Client và Server cắm vào nhau, Agent lập tức hiểu được toàn bộ tài liệu, cấu trúc thư mục, và các công cụ (Tools) mà ứng dụng kia đang có, **mà bạn không cần phải viết một dòng code tích hợp (integration code) nào!**
+
+### Cursor & Claude Lên Ngôi
+Nếu bạn dùng Cursor hoặc Claude Desktop hiện tại, bạn có thể thiết lập MCP. Chỉ trong 1 phút, Claude có thể lục lọi mọi ngóc ngách trong database PostgreSQL của bạn, hoặc tự động đọc toàn bộ tài liệu Notion của team để viết code chính xác 100%. MCP đang biến mọi ứng dụng thành "bộ não thứ hai" (Second Brain) cho AI.
+
+---
+
+## Tổng Kết Phần 5
+Với Hệ thống Trí nhớ và giao thức MCP, AI Agent của bạn giờ đây đã có khả năng thấu hiểu ngữ cảnh siêu việt và kết nối với toàn bộ thế giới số xung quanh một cách không giới hạn.
+
+Giờ thì hệ thống đã đủ to. Bạn build xong Agent rồi, chạy test trên máy local quá hoàn hảo. Nhưng làm sao để đẩy nó lên server (Production) cho hàng ngàn người dùng mà không bị sập mạng, hay bị tốn hàng ngàn đô la tiền API? 
+
+Tất cả sẽ được giải đáp trong phần cuối cùng: **[Phần 6] Đưa AI Ra Production - LLMOps & Evals**.
