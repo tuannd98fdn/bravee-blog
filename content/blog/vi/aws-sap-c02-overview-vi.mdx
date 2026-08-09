@@ -40,7 +40,7 @@ Hai mục tiêu này không mâu thuẫn nhau. Thực ra, SAP-C02 *bắt buộc*
 | Thời gian | 130 phút | 180 phút |
 | Điểm đậu | 720/1000 | 750/1000 |
 | Độ sâu câu hỏi | Hiểu dịch vụ | Phân tích + quyết định kiến trúc |
-| Scenario độ dài | Ngắn (2–4 dòng) | Dài (8–15 dòng), nhiều ràng buộc |
+| Độ dài câu hỏi (Scenario) | Ngắn (2–4 dòng) | Dài (8–15 dòng), nhiều ràng buộc |
 | Kinh nghiệm khuyến nghị | 1 năm | 2+ năm thực tế |
 
 **Điểm quan trọng nhất:** Ở SAP-C02, câu hỏi thường có **2 đáp án đều đúng về mặt kỹ thuật**, nhưng chỉ có 1 là *tối ưu* theo điều kiện của bài (chi phí, RTO, compliance...). Kỹ năng phân tích trade-off mới là yếu tố quyết định.
@@ -136,8 +136,8 @@ Active-Passive (Failover)
     [Chỉ Primary phục vụ; Standby chờ failover]
 ```
 
-| | Active-Active | Active-Passive |
-|--|--------------|----------------|
+| Tiêu chí | Active-Active | Active-Passive |
+|----------|---------------|----------------|
 | **RTO** | Gần bằng 0 (không downtime) | Vài phút (failover cần thời gian) |
 | **Chi phí** | Cao hơn (double resources) | Thấp hơn (standby ở minimum) |
 | **Độ phức tạp** | Cao (cần xử lý data consistency) | Thấp hơn |
