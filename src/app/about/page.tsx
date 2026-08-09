@@ -117,10 +117,10 @@ export default function AboutPage() {
             I&apos;m always happy to chat about tech, collaborate on projects, or just say hi.
           </p>
           <div className={styles.connectLinks}>
-            <a href="https://github.com/bravee06" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
+            <a href="https://github.com/tuannd98fdn" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
               GitHub
             </a>
-            <a href="https://linkedin.com/in/bravee06" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
+            <a href="https://www.linkedin.com/in/tuan-nguyen-dinh-283176302/" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
               LinkedIn
             </a>
             <a href="https://x.com/bravee06" target="_blank" rel="noopener noreferrer" className="btn btn-ghost">
