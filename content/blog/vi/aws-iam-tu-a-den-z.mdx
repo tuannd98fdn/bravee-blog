@@ -1,0 +1,363 @@
+---
+title: "[AWS Series #2] IAM: Identity & Access Management Từ A-Z"
+date: "2026-08-10"
+description: "Hiểu sâu về IAM User, Group, Role, Policy và cơ chế Policy Evaluation Logic. Cross-account access, STS, Permission Boundary — những thứ hay ra thi SAP-C02 nhất."
+tags: ["aws", "sap-c02", "security", "iam"]
+lang: "vi"
+---
+
+Nếu bạn hỏi mình đâu là dịch vụ AWS **quan trọng nhất** — câu trả lời không phải EC2, không phải S3. Đó là **IAM**.
+
+Mọi thứ trên AWS đều đi qua IAM. Mỗi API call bạn thực hiện — dù là từ CLI, SDK, hay từ một Lambda function — đều phải được IAM xác thực và phân quyền. Hiểu IAM sâu là hiểu nền móng của toàn bộ security model trên AWS.
+
+Và trong kỳ thi SAP-C02, IAM xuất hiện ở **tất cả 4 domain**. Không có domain nào bạn có thể tránh khỏi IAM.
+
+---
+
+## 1. Các Thành Phần Cốt Lõi Của IAM
+
+### IAM User
+
+Một **IAM User** đại diện cho một người dùng cụ thể (hoặc một ứng dụng) trong tài khoản AWS. User có thể được cấp:
+
+- **Console access** — username + password để đăng nhập AWS Console
+- **Programmatic access** — Access Key ID + Secret Access Key để dùng CLI/SDK
+
+> **Best practice:** Không bao giờ dùng Root Account cho công việc hàng ngày. Tạo IAM User với least-privilege ngay từ đầu.
+
+### IAM Group
+
+**IAM Group** là tập hợp các IAM User. Policy attach vào Group sẽ áp dụng cho tất cả User trong Group đó.
+
+```
+Ví dụ:
+Group "Developers" → Policy: ReadWriteS3, InvokerLambda
+Group "Admins"     → Policy: AdministratorAccess
+```
+
+**Lưu ý:** Group không thể chứa Group khác (không nested). Group cũng không thể được assume — chỉ User và Role mới có thể là principal.
+
+### IAM Role
+
+**IAM Role** là thành phần linh hoạt và quan trọng nhất trong IAM. Không như User, Role **không thuộc về một người cụ thể** — nó được *assume* (tạm thời đảm nhận) bởi:
+
+- IAM User (trong cùng account hoặc khác account)
+- AWS Services (EC2, Lambda, ECS, v.v.)
+- Federated identities (SAML, OIDC, Web Identity)
+- Other AWS accounts
+
+Khi assume một Role, người dùng nhận được **temporary security credentials** (có thời hạn) thay thế cho credentials gốc.
+
+### IAM Policy
+
+**IAM Policy** là tài liệu JSON định nghĩa quyền truy cập. Một Policy bao gồm một hoặc nhiều **Statement**, mỗi Statement có cấu trúc:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowS3Read",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::my-bucket",
+        "arn:aws:s3:::my-bucket/*"
+      ],
+      "Condition": {
+        "StringEquals": {
+          "s3:prefix": ["home/", "shared/"]
+        }
+      }
+    }
+  ]
+}
+```
+
+Các element quan trọng:
+- **Effect:** `Allow` hoặc `Deny`
+- **Action:** API action cụ thể (e.g., `s3:GetObject`) hoặc wildcard (`s3:*`)
+- **Resource:** ARN của resource áp dụng, hoặc `*` cho tất cả
+- **Condition:** Điều kiện tuỳ chọn (IP, thời gian, MFA, tag, v.v.)
+
+---
+
+## 2. Các Loại IAM Policy
+
+Hiểu các loại policy khác nhau là **bắt buộc** cho SAP-C02:
+
+| Loại Policy | Attach vào đâu | Đặc điểm |
+|-------------|----------------|-----------|
+| **Identity-based** | User, Group, Role | Cấp quyền cho identity thực hiện hành động |
+| **Resource-based** | Resource (S3 bucket, SQS queue, v.v.) | Cho phép ai được truy cập resource này |
+| **Permission Boundary** | User, Role | Giới hạn tối đa quyền mà identity có thể có |
+| **SCP** (Service Control Policy) | OU hoặc Account trong AWS Organizations | Giới hạn toàn bộ account — kể cả Admin |
+| **Session Policy** | AssumeRole / AssumeRoleWithSAML | Giới hạn quyền trong một session cụ thể |
+| **ACL** (Access Control List) | S3, VPC | Legacy, dùng resource-based policy thay thế |
+
+### Identity-based vs Resource-based Policy
+
+```
+Identity-based Policy:
+  "Tôi (IAM User/Role) được phép làm gì?"
+
+  IAM User (Minh)
+    └── Policy: Allow s3:GetObject on arn:aws:s3:::my-bucket/*
+
+Resource-based Policy:
+  "Ai được phép truy cập tôi (Resource)?"
+
+  S3 Bucket (my-bucket)
+    └── Bucket Policy: Allow s3:GetObject by arn:aws:iam::123456:user/Minh
+```
+
+Khi **cả hai** cùng tồn tại (trong cùng một account), AWS sẽ **hợp nhất** (union) quyền: nếu *ít nhất một trong hai* cho phép thì request được thông.
+
+Khi cross-account: **cả hai phải cho phép** thì request mới được thông.
+
+---
+
+## 3. Policy Evaluation Logic — Cơ Chế Phân Quyền
+
+Đây là phần **quan trọng nhất** trong IAM và cũng là nguồn gốc của hầu hết các câu hỏi SAP-C02 về IAM.
+
+### Thứ tự đánh giá (trong cùng account)
+
+```
+Bước 1: Explicit DENY?
+   → Có → TỪ CHỐI ngay lập tức (không xét thêm)
+   → Không → Tiếp tục
+
+Bước 2: SCP cho phép?
+   → Không → TỪ CHỐI
+   → Có → Tiếp tục
+
+Bước 3: Resource-based Policy cho phép?
+   → Có → CHO PHÉP ngay (nếu cùng account)
+   → Không → Tiếp tục
+
+Bước 4: Permission Boundary cho phép?
+   → Không → TỪ CHỐI
+   → Có → Tiếp tục
+
+Bước 5: Session Policy cho phép?
+   → Không → TỪ CHỐI
+   → Có → Tiếp tục
+
+Bước 6: Identity-based Policy cho phép?
+   → Có → CHO PHÉP
+   → Không → TỪ CHỐI (Implicit Deny)
+```
+
+**Quy tắc vàng cần thuộc lòng:**
+> 🔴 **Explicit Deny luôn thắng** — dù có bao nhiêu Allow đi nữa
+> ⬜ **Implicit Deny là default** — không có Allow = bị từ chối
+
+### Diagram tổng hợp
+
+```
+Request đến AWS
+      │
+      ▼
+[1. Explicit DENY trong bất kỳ policy nào?]
+      │ Có → ❌ DENY
+      │ Không
+      ▼
+[2. SCP (nếu dùng Organizations) cho phép?]
+      │ Không → ❌ DENY
+      │ Có
+      ▼
+[3. Resource-based Policy Allow (same account)?]
+      │ Có → ✅ ALLOW
+      │ Không
+      ▼
+[4. Permission Boundary cho phép?]
+      │ Không → ❌ DENY
+      │ Có
+      ▼
+[5. Identity-based Policy Allow?]
+      │ Có → ✅ ALLOW
+      │ Không → ❌ DENY (Implicit Deny)
+```
+
+---
+
+## 4. STS & AssumeRole — Cơ Chế Credential Tạm Thời
+
+**AWS Security Token Service (STS)** là dịch vụ cung cấp **temporary security credentials** khi bạn assume một Role.
+
+### Flow cơ bản của AssumeRole
+
+```
+IAM User (Account A)
+      │
+      │ 1. Gọi sts:AssumeRole
+      │    với Role ARN thuộc Account B
+      ▼
+AWS STS
+      │
+      │ 2. Kiểm tra:
+      │    - User có quyền sts:AssumeRole?
+      │    - Role Trust Policy có cho phép User này?
+      ▼
+STS trả về Temporary Credentials:
+      - AccessKeyId (tạm thời)
+      - SecretAccessKey (tạm thời)
+      - SessionToken
+      - Expiration (mặc định 1h, tối đa 12h)
+      │
+      ▼
+User dùng credentials này để gọi API trong Account B
+```
+
+### Trust Policy — Ai được phép Assume Role?
+
+Trust Policy là **resource-based policy của Role**, định nghĩa ai (principal) được phép assume role đó:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::111122223333:root"
+      },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "Bool": {
+          "aws:MultiFactorAuthPresent": "true"
+        }
+      }
+    }
+  ]
+}
+```
+
+Ví dụ này: Account `111122223333` được phép assume role này, **nhưng chỉ khi đã bật MFA**.
+
+---
+
+## 5. Permission Boundary — Giới Hạn Tối Đa Quyền
+
+**Permission Boundary** là một cơ chế nâng cao, thường bị bỏ qua nhưng **rất hay ra thi SAP-C02**.
+
+> Permission Boundary không *cấp* quyền — nó *giới hạn* quyền tối đa mà một User/Role có thể có.
+
+### Minh họa
+
+```
+IAM User "Dev" có:
+  Identity-based Policy → Allow: s3:*, ec2:*, rds:*
+  Permission Boundary   → Allow: s3:*, ec2:*
+
+Kết quả thực tế: Chỉ có s3:* và ec2:*
+  → rds:* bị loại vì nằm ngoài Boundary
+```
+
+**Use case phổ biến:** Cho phép developer tự tạo IAM Role cho Lambda của họ, nhưng giới hạn Role đó không thể có quyền cao hơn Permission Boundary đã định sẵn. Điều này ngăn privilege escalation.
+
+---
+
+## 6. Cross-Account Access Pattern
+
+Đây là pattern **xuất hiện nhiều nhất** trong các câu hỏi IAM của SAP-C02.
+
+### Scenario: Account A muốn truy cập S3 của Account B
+
+```
+┌─────────── Account A ───────────┐    ┌─────────── Account B ───────────┐
+│                                 │    │                                 │
+│  IAM User (Nguyen)              │    │  S3 Bucket (data-bucket)        │
+│  Identity Policy:               │    │  Bucket Policy:                 │
+│    Allow sts:AssumeRole         │    │    Allow Principal:             │
+│    on arn:aws:iam::B:role/Cross │    │    arn:aws:iam::A:role/Cross    │
+│                                 │    │                                 │
+│          Role "CrossAccess"     │    │  Role "CrossAccess":            │
+│          (thuộc Account B)      │    │    Trust Policy: Allow A        │
+│          Permission: s3:Get*    │    │    Permission: s3:GetObject     │
+└─────────────────────────────────┘    └─────────────────────────────────┘
+                    │                              ▲
+                    └──────── AssumeRole ──────────┘
+                    └──────── Temporary Creds ──────
+```
+
+**Điều kiện để cross-account access hoạt động:**
+1. Account A: User/Role phải có `sts:AssumeRole` permission cho Role ở Account B
+2. Account B: Role's Trust Policy phải cho phép Account A (hoặc User/Role cụ thể) assume
+3. Account B: Role phải có quyền đủ để thực hiện hành động mong muốn (e.g., `s3:GetObject`)
+
+---
+
+## 7. So Sánh: Identity-based vs Resource-based Policy
+
+Đây là câu hỏi so sánh **kinh điển** trong SAP-C02:
+
+| Tiêu chí | Identity-based | Resource-based |
+|----------|----------------|----------------|
+| **Attach vào** | User, Group, Role | S3, SQS, KMS, Lambda, v.v. |
+| **Câu hỏi trả lời** | "Tôi được làm gì?" | "Ai được làm gì với tôi?" |
+| **Cross-account** | Cần cả hai phía | Đủ một mình (nếu Allow) |
+| **Mandatory?** | Cần ít nhất một | Tuỳ chọn |
+| **Principal field** | Không có | Có (bắt buộc) |
+
+**Trick quan trọng — Cross-account:**
+
+```
+Same account:
+  Identity-based OR Resource-based = ALLOW ✅
+
+Cross-account:
+  Identity-based AND Resource-based = ALLOW ✅
+  (Thiếu một trong hai = DENY ❌)
+```
+
+---
+
+## ⚠️ Lưu Ý Thi SAP-C02
+
+**Trap #1: SCP không apply cho Master Account (Management Account)**
+
+SCP trong AWS Organizations có thể block tất cả account, **ngoại trừ** Management Account (account gốc tạo Organization). Đây là trap hay gặp nhất.
+
+**Trap #2: Permission Boundary không tự cấp quyền**
+
+Nhiều người nhầm: "Tôi set Permission Boundary cho phép s3:* thì User đó có quyền s3:*". Sai. Boundary chỉ *giới hạn ceiling*. User vẫn cần có Identity-based Policy cấp quyền đó.
+
+**Trap #3: Explicit Deny không có ngoại lệ**
+
+```
+Policy 1: Deny s3:* trên tất cả resources
+Policy 2: Allow s3:GetObject trên my-bucket
+
+Kết quả: DENY s3:GetObject trên my-bucket
+```
+Explicit Deny không bị override bởi bất kỳ Allow nào.
+
+**Trap #4: Group không thể là Principal trong Trust Policy**
+
+Role Trust Policy không thể có Principal là một Group. Chỉ có thể là User, Role, Service, hoặc Account.
+
+**Trick hay ra thi:**
+
+> Câu hỏi hay dạng: *"Một developer trong Account A cần đọc S3 bucket trong Account B. Điều kiện tối thiểu để làm điều này là gì?"*
+>
+> Đáp án: **Cả hai:** Identity-based policy cho phép `sts:AssumeRole` (Account A) **VÀ** Trust Policy cho phép Account A assume Role (Account B).
+
+---
+
+## Tóm Tắt
+
+- **IAM gồm 4 thành phần cốt lõi:** User, Group, Role, Policy
+- **Policy Evaluation:** Explicit Deny → SCP → Resource-based → Permission Boundary → Identity-based
+- **Quy tắc vàng:** Explicit Deny luôn thắng; Default là Implicit Deny
+- **AssumeRole:** STS cấp temporary credentials; Trust Policy kiểm soát ai được assume
+- **Permission Boundary:** Giới hạn ceiling của quyền, không tự cấp quyền
+- **Cross-account:** Cần cả Identity-based (Account A) *và* Resource-based hoặc Role Trust Policy (Account B)
+
+---
+
+> 🔖 **Bài tiếp theo:** [[AWS Series #3] VPC: Thiết Kế Mạng Ảo Trên AWS](/blog/aws-vpc-mang-ao-tren-aws) — CIDR planning, public vs private subnet, Security Group vs NACL, VPC Peering và Transit Gateway.
