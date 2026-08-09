@@ -1,8 +1,8 @@
 # Progress Tracker
 
-## Current Phase: Phase 1 — "Ship It"
-## Status: Ready for Deployment (99%)
-## Last Updated: 2026-08-08
+## Current Phase: Phase 2 — "Engagement"
+## Status: Phase 2 Completed (View counts, Analytics, Giscus)
+## Last Updated: 2026-08-09
 
 ---
 
@@ -25,8 +25,12 @@
 - [x] Sample content (hello-world.mdx)
 - [x] Build verification
 
-### 🔄 In Progress
-- [/] Deploy to Vercel
+- [x] Deploy to Vercel
+
+### ✅ Phase 2 Done
+- [x] Vercel Analytics setup
+- [x] View counts with Upstash Redis
+- [x] Giscus comments integration
 
 ### 📋 Pending
-- [ ] Setup Phase 2 (View counts, Analytics, Giscus)
+- [ ] Setup Phase 3 (Differentiation & UX polish)

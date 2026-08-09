@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import ViewCounter from '@/components/features/ViewCounter';
+import GiscusComments from '@/components/features/GiscusComments';
 import { Post, PostMeta } from '@/lib/mdx';
 import styles from './post.module.css';
 
@@ -61,6 +63,8 @@ export default function BlogPostContent({ post, prevPost, nextPost, children }: 
                   </span>
                 </>
               )}
+              <span>·</span>
+              <ViewCounter slug={post.meta.slug} trackView={true} />
             </div>
           </div>
           <h1 className={styles.title}>{post.meta.title}</h1>
@@ -94,6 +98,9 @@ export default function BlogPostContent({ post, prevPost, nextPost, children }: 
             ) : <div />}
           </div>
         </footer>
+
+        {/* Comments */}
+        <GiscusComments />
       </article>
     </>
   );
