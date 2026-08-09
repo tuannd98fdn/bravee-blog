@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getAllPosts } from '@/lib/mdx';
+import ClientHero3D from '@/components/ui/ClientHero3D';
 import styles from './page.module.css';
 
 const CURRENT_LEARNING = 'AI Agents & LangGraph';
@@ -50,27 +51,8 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
-        <div className={styles.heroVisual}>
-          <div className={styles.codeWindow}>
-            <div className={styles.codeWindowHeader}>
-              <span className={styles.dot} style={{ background: '#FF5F57' }} />
-              <span className={styles.dot} style={{ background: '#FEBC2E' }} />
-              <span className={styles.dot} style={{ background: '#28C840' }} />
-              <span className={styles.codeWindowTitle}>bravee.ts</span>
-            </div>
-            <pre className={styles.codeContent}>
-              <code>{`const bravee = {
-  role: "Full-Stack Dev",
-  learning: [
-    "AI Agents",
-    "AWS Cloud",
-    "System Design"
-  ],
-  goal: "Senior Engineer",
-  motto: "Learn → Build → Share"
-};`}</code>
-            </pre>
-          </div>
+        <div className={styles.heroVisual3D}>
+          <ClientHero3D />
         </div>
       </section>
 
