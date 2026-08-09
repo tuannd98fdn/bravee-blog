@@ -63,3 +63,11 @@
 - **Alternatives**: Simple per-minute limits, client-side block.
 - **Reason**: Robust protection against fast spam bots and sustained programmatic abuse, ensuring API keys remain within quota for regular readers.
 
+## Decision #10: Dynamic brand logo Favicon using Next.js icon.tsx
+- **Date**: 2026-08-09
+- **Context**: Replace the default Vercel favicon with the site's brand logo icon.
+- **Decision**: Added `src/app/icon.tsx` using `next/og` ImageResponse to dynamically generate a 32x32 PNG favicon matching the header logo's blue-to-purple gradient and centered "B" letter, and deleted the default `src/app/favicon.ico`.
+- **Alternatives**: Pre-compiled custom `favicon.ico` or static PNG file.
+- **Reason**: Dynamic generation guarantees consistency with the header style variables (gradient colors), stays crisp at all screen resolutions, and aligns with modern Next.js metadata practices.
+
+
