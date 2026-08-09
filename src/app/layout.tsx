@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import Chatbot from '@/components/ui/Chatbot';
 import { Analytics } from '@vercel/analytics/react';
 
 export const metadata: Metadata = {
@@ -70,6 +71,7 @@ export default function RootLayout({
         <Header />
         <main>{children}</main>
         <Footer />
+        <Chatbot />
         <Analytics />
       </body>
     </html>
