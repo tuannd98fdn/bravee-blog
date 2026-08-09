@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { PostMeta } from '@/lib/mdx';
 import { searchPosts } from '@/lib/search';
+import BlogCard from '@/components/ui/BlogCard';
 import styles from './blog.module.css';
 
 interface BlogListProps {
@@ -14,6 +15,7 @@ interface BlogListProps {
 export default function BlogList({ posts, tags }: BlogListProps) {
   const [query, setQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedLang, setSelectedLang] = useState<'all' | 'en' | 'vi'>('all');
 
   const filtered = useMemo(() => {
     let result = posts;
@@ -24,12 +26,16 @@ export default function BlogList({ posts, tags }: BlogListProps) {
       );
     }
     
+    if (selectedLang !== 'all') {
+      result = result.filter(p => p.lang === selectedLang);
+    }
+    
     if (query.trim()) {
       result = searchPosts(result, query);
     }
     
     return result;
-  }, [posts, query, selectedTag]);
+  }, [posts, query, selectedTag, selectedLang]);
 
   return (
     <div className={styles.page}>
@@ -64,7 +70,18 @@ export default function BlogList({ posts, tags }: BlogListProps) {
             </button>
           )}
         </div>
-
+        
+        <div className={styles.langFilter}>
+          <select 
+            value={selectedLang} 
+            onChange={(e) => setSelectedLang(e.target.value as any)}
+            className={styles.langSelect}
+          >
+            <option value="all">All Languages</option>
+            <option value="en">🇺🇸 English</option>
+            <option value="vi">🇻🇳 Tiếng Việt</option>
+          </select>
+        </div>
         <div className={styles.tags}>
           <button
             className={`${styles.tagBtn} ${!selectedTag ? styles.tagBtnActive : ''}`}
@@ -87,6 +104,7 @@ export default function BlogList({ posts, tags }: BlogListProps) {
       {/* Results count */}
       <p className={styles.resultCount}>
         {filtered.length} {filtered.length === 1 ? 'post' : 'posts'}
+        {selectedLang !== 'all' && <> in <strong>{selectedLang === 'en' ? 'English' : 'Tiếng Việt'}</strong></>}
         {selectedTag && <> tagged <strong>{selectedTag}</strong></>}
         {query && <> matching <strong>&ldquo;{query}&rdquo;</strong></>}
       </p>
@@ -95,32 +113,7 @@ export default function BlogList({ posts, tags }: BlogListProps) {
       {filtered.length > 0 ? (
         <div className={styles.postList}>
           {filtered.map((post) => (
-            <Link
-              href={`/blog/${post.slug}`}
-              key={post.slug}
-              className={styles.postCard}
-            >
-              <div className={styles.postLeft}>
-                <time className={styles.postDate}>
-                  {new Date(post.date).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                </time>
-              </div>
-              <div className={styles.postRight}>
-                <h2 className={styles.postTitle}>{post.title}</h2>
-                <p className={styles.postDesc}>{post.description}</p>
-                <div className={styles.postFooter}>
-                  <div className={styles.postTags}>
-                    {post.tags.slice(0, 3).map(tag => (
-                      <span key={tag} className="tag">{tag}</span>
-                    ))}
-                  </div>
-                  <span className={styles.postReadTime}>{post.readingTime}</span>
-                </div>
-              </div>
-            </Link>
+            <BlogCard key={post.slug} post={post} />
           ))}
         </div>
       ) : (

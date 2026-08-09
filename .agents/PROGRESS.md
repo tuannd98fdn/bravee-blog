@@ -1,7 +1,7 @@
 # Progress Tracker
 
-## Current Phase: Phase 3 — "Differentiation & UX Polish"
-## Status: Phase 3 In Progress (TOC, OG Image, RSS)
+## Current Phase: Phase 4 — "Scale"
+## Status: Phase 4 Completed (Tags, Newsletter, i18n Filter)
 ## Last Updated: 2026-08-09
 
 ---
@@ -37,5 +37,10 @@
 - [x] Dynamic Open Graph Images (OG Images)
 - [x] RSS Feed generation (/feed.xml)
 
-### 📋 Pending
-- [ ] Phase 4 (Scale)
+### ✅ Phase 4 Done
+- [x] Topic / Tag Indexing (`/tags`, `/tags/[tag]`)
+- [x] Newsletter Subscription form and dummy API
+- [x] Language Filter in Blog List
+
+### 🎉 All Phases Completed!
+The architecture and implementation plan is fully realized.

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import ViewCounter from '@/components/features/ViewCounter';
 import GiscusComments from '@/components/features/GiscusComments';
 import TableOfContents from '@/components/features/TableOfContents';
+import NewsletterForm from '@/components/features/NewsletterForm';
 import { Post, PostMeta } from '@/lib/mdx';
 import styles from './post.module.css';
 
@@ -98,6 +99,10 @@ export default function BlogPostContent({ post, prevPost, nextPost, children }: 
                   <span className={styles.navTitle}>{nextPost.title}</span>
                 </Link>
               ) : <div />}
+            </div>
+            
+            <div style={{ marginTop: 'var(--space-16)' }}>
+              <NewsletterForm />
             </div>
           </footer>
 
