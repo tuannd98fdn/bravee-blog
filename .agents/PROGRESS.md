@@ -1,7 +1,7 @@
 # Progress Tracker
 
-## Current Phase: Phase 2 — "Engagement"
-## Status: Phase 2 Completed (View counts, Analytics, Giscus)
+## Current Phase: Phase 3 — "Differentiation & UX Polish"
+## Status: Phase 3 In Progress (TOC, OG Image, RSS)
 ## Last Updated: 2026-08-09
 
 ---
@@ -32,5 +32,10 @@
 - [x] View counts with Upstash Redis
 - [x] Giscus comments integration
 
+### ✅ Phase 3 Done
+- [x] Sticky Table of Contents (TOC) for articles
+- [x] Dynamic Open Graph Images (OG Images)
+- [x] RSS Feed generation (/feed.xml)
+
 ### 📋 Pending
-- [ ] Setup Phase 3 (Differentiation & UX polish)
+- [ ] Phase 4 (Scale)

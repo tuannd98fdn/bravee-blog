@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   keywords: ['tech blog', 'programming', 'AI', 'AWS', 'Java', 'Angular', 'web development', 'software engineering'],
   authors: [{ name: 'Bravee' }],
   creator: 'Bravee',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
   openGraph: {
     type: 'website',
     locale: 'en_US',
@@ -20,10 +21,12 @@ export const metadata: Metadata = {
     siteName: 'Bravee Blog',
     title: 'Bravee — Tech Blog',
     description: 'Personal tech blog sharing knowledge on AI, Cloud, Java, Angular, and the journey from junior to senior developer.',
+    images: [{ url: '/og?title=Bravee%20%E2%80%94%20Tech%20Blog', width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',
     creator: '@bravee06',
+    images: ['/og?title=Bravee%20%E2%80%94%20Tech%20Blog'],
   },
   robots: {
     index: true,
