@@ -39,7 +39,9 @@ export default function Header() {
         {/* Logo */}
         <Link href="/" className={styles.logo} onClick={() => setMobileOpen(false)}>
           <span className={styles.logoIcon}>B</span>
-          <span className={styles.logoText}>bravee</span>
+          <span className={styles.logoText}>
+            Bravee<span className={styles.logoDot}>.</span>
+          </span>
         </Link>
 
         {/* Desktop Navigation */}
