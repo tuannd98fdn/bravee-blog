@@ -20,6 +20,7 @@ export default function HomePage() {
     <div className={styles.page}>
       {/* Hero Section */}
       <section className={styles.hero}>
+        <div className={styles.ambientGlow}></div>
         <div className={styles.heroContent}>
           <div className={styles.greeting}>
             <span className={styles.wave}>👋</span>
@@ -39,7 +40,7 @@ export default function HomePage() {
           <div className={styles.heroCta}>
             <Link href="/blog" className="btn btn-primary">
               Read the blog
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg className={styles.btnIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="5" y1="12" x2="19" y2="12" />
                 <polyline points="12 5 19 12 12 19" />
               </svg>

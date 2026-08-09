@@ -47,21 +47,46 @@
 }
 
 .logoIcon {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
-  background: var(--accent-gradient);
-  color: white;
-  border-radius: var(--radius-md);
-  font-size: var(--text-sm);
+  background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 16px;
   font-weight: 800;
   letter-spacing: -0.05em;
+  box-shadow: 
+    0 4px 12px rgba(139, 92, 246, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.4);
+  overflow: hidden;
+}
+
+/* Hiệu ứng trượt sáng bóng (Glossy Shine) trên Logo */
+.logoIcon::after {
+  content: '';
+  position: absolute;
+  top: 0; 
+  left: -100%;
+  width: 50%; 
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  transform: skewX(-20deg);
+  animation: logoShine 4s infinite;
+}
+
+@keyframes logoShine {
+  0% { left: -100%; }
+  20%, 100% { left: 200%; }
 }
 
 .logoText {
-  letter-spacing: var(--tracking-tight);
+  font-size: 1.15rem;
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
 /* Desktop Nav */
