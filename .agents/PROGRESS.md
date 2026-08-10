@@ -49,7 +49,7 @@
 - [x] RAG Route using Fuse.js search query logic (`/api/chat`)
 - [x] Gemini 3.5 Flash Integration
 - [x] Upstash Redis two-tier rate-limiting (10/min, 30/hr)
-- [x] Production Vercel deployment with environment variables
+- [x] Production Vercel deployment → migrated to project `tuannd` at https://tuannd.vercel.app
 - [x] Replaced default Vercel favicon with dynamic brand logo favicon using Next.js `icon.tsx`
 
 ### 🎉 All Phases Completed!

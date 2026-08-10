@@ -5,9 +5,11 @@ import { Redis } from '@upstash/redis';
 const mockRedis = {
   sadd: async () => 1,
   eval: async () => [0, 1],
+  evalsha: async () => [0, 1],
   pipeline: () => ({
     exec: async () => [],
     eval: () => ({ exec: async () => [] }),
+    evalsha: () => ({ exec: async () => [] }),
     sadd: () => ({ exec: async () => [] }),
   }),
 } as unknown as Redis;

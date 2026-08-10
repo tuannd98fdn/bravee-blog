@@ -13,7 +13,7 @@
 | Search | Fuse.js | latest | Client-side fuzzy search |
 | Code Highlighting | rehype-pretty-code + Shiki | latest | Beautiful syntax highlighting |
 | Fonts | Inter + JetBrains Mono | Google Fonts | Premium typography |
-| Deploy | Vercel | — | Free tier, auto CI/CD |
+| Deploy | Vercel (project: `tuannd`) | — | Free tier, auto CI/CD — https://tuannd.vercel.app |
 | Content Parsing | gray-matter + reading-time | — | Frontmatter + read time |
 
 ## Folder Structure
