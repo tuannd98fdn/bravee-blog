@@ -1,0 +1,418 @@
+---
+title: "[LangChain Thực Chiến - Phần 1] Xây Dựng GenAI App Đúng Cách Với Flask & LangChain"
+date: "2026-08-16"
+description: "Từ con số 0, build một AI-powered web app hoàn chỉnh với Flask, IBM watsonx.ai, và LangChain. Học cách LLM hoạt động, so sánh Llama vs Granite vs Mistral, và trả về JSON có cấu trúc với JsonOutputParser."
+tags: ["LangChain", "GenAI", "Flask", "IBM watsonx", "Python", "LLM", "Series LangChain Thực Chiến"]
+lang: "vi"
+---
+
+Bạn đã bao giờ tự hỏi: *"Làm sao các app AI như ChatGPT hay Gemini trả về câu trả lời đúng định dạng, không bị lộn xộn?"*
+
+Bí quyết nằm ở **cách bạn kiến trúc pipeline AI** — không phải chỉ là gọi API rồi in ra màn hình.
+
+Bài viết này là Phần 1 của series **LangChain Thực Chiến**, nơi chúng ta sẽ build một AI-powered web app đúng nghĩa: có cấu trúc code rõ ràng, có structured output, và có thể dễ dàng mở rộng.
+
+---
+
+## 🧠 Phần 1: LLM Hoạt Động Như Thế Nào?
+
+Trước khi code, hãy hiểu rõ "đối tác AI" của mình.
+
+### Tokenization — AI Không Đọc Chữ, Nó Đọc Mảnh Ghép
+
+LLM không xử lý từng chữ cái như bạn nghĩ. Nó chia text thành các **tokens** — những mảnh ghép nhỏ. Câu *"Xin chào"* có thể thành 3–4 tokens tùy model.
+
+<Callout type="tip" title="Thực tế về token và chi phí">
+Tiếng Việt thường tốn nhiều token hơn tiếng Anh do dấu thanh điệu. Một từ tiếng Việt có thể chiếm 2–3 tokens, trong khi tiếng Anh chỉ mất ~0.75 tokens/từ. Đây là lý do chi phí API khi dùng tiếng Việt cao hơn.
+</Callout>
+
+### Embedding — Biến Chữ Thành Toán Học
+
+Sau tokenization, mỗi token được chuyển thành một vector — một danh sách hàng trăm số thực. "Mèo" và "chó" sẽ có vector gần nhau trong không gian toán học, còn "mèo" và "máy bay" thì xa nhau.
+
+### Attention — Bí Quyết "Hiểu Ngữ Cảnh"
+
+Đây là trái tim của Transformer. Khi xử lý từ "nó" trong câu *"Con mèo ngủ. Nó rất lười."*, model phải biết "nó" trỏ đến "Con mèo". Attention mechanism cho phép mỗi token "nhìn" toàn bộ câu để hiểu quan hệ.
+
+### Next Token Prediction — Đơn Giản Nhưng Mạnh Mẽ
+
+Toàn bộ sức mạnh của LLM xây dựng trên một nhiệm vụ nghe có vẻ đơn giản: **dự đoán token tiếp theo**. Từ nhiệm vụ này, model học được ngữ pháp, kiến thức thực tế, thậm chí cả khả năng lập luận.
+
+---
+
+## ⚙️ Cài Đặt Môi Trường
+
+```bash
+mkdir genai_flask_app
+cd genai_flask_app
+
+# Tạo virtual environment
+python3.11 -m venv venv
+source venv/bin/activate
+
+# Cài đặt thư viện
+pip install ibm-watsonx-ai==1.3.39
+pip install Flask langchain-ibm langchain
+```
+
+---
+
+## 📞 Lần Đầu Gọi LLM
+
+Hãy bắt đầu với một file đơn giản để cảm nhận cách API hoạt động.
+
+```python
+# capital.py
+from ibm_watsonx_ai import Credentials
+from ibm_watsonx_ai.foundation_models import ModelInference
+from ibm_watsonx_ai.metanames import GenTextParamsMetaNames
+
+credentials = Credentials(
+    url="https://us-south.ml.cloud.ibm.com",
+    # api_key="<YOUR_API_KEY>"
+)
+
+params = {
+    GenTextParamsMetaNames.DECODING_METHOD: "greedy",  # Luôn chọn token có xác suất cao nhất
+    GenTextParamsMetaNames.MAX_NEW_TOKENS: 100          # Giới hạn output để tiết kiệm chi phí
+}
+
+model = ModelInference(
+    model_id='ibm/granite-4-h-small',
+    params=params,
+    credentials=credentials,
+    project_id="skills-network"
+)
+
+text = "Only reply with the answer. What is the capital of Canada?"
+print(model.generate(text)['results'][0]['generated_text'])
+# Output: Ottawa.
+```
+
+### Giải Thích `DECODING_METHOD`
+
+| Phương pháp | Cách hoạt động | Khi nào dùng |
+|---|---|---|
+| `greedy` | Luôn chọn token có xác suất cao nhất | Code generation, trích xuất data |
+| `sampling` | Chọn ngẫu nhiên theo phân phối xác suất | Viết sáng tạo, brainstorming |
+
+---
+
+## 🤖 So Sánh 3 LLM: Llama vs Granite vs Mistral
+
+IBM watsonx cho phép bạn dễ dàng thay đổi model. Đây là 3 model chính trong bài này:
+
+| Provider | Model | Đặc điểm nổi bật | Giá (USD/1M tokens) |
+|---|---|---|---|
+| Meta | `llama-4-maverick-17b` | Đa ngôn ngữ (200 ngôn ngữ), context 1M tokens | Input: $0.35 / Output: $1.40 |
+| IBM | `granite-4-h-small` | Q&A, RAG, agentic workflows, giá cực rẻ | Input: $0.06 / Output: $0.25 |
+| Mistral | `mistral-small-3-1-24b` | Instruction following, multilingual | Input: $0.10 / Output: $0.30 |
+
+<Callout type="info" title="Thực nghiệm với Llama">
+Thử đổi model sang Llama mà không có special tokens, bạn sẽ nhận được output lạ như: *"Ottawa - IELTS Listening Sample Question..."*. Đây không phải bug — đó là model đang "tưởng" bạn đang làm bài thi IELTS vì prompt format không đúng.
+</Callout>
+
+---
+
+## 🔑 Special Tokens — Bộ Ngôn Ngữ Riêng Của Từng Model
+
+Mỗi model được huấn luyện với một định dạng prompt riêng. Nếu bạn không dùng đúng format, model sẽ bị "lạc hướng".
+
+### Llama — Dùng Header Tokens
+
+```
+<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+Bạn là một trợ lý AI chính xác và súc tích.<|eot_id|>
+
+<|start_header_id|>user<|end_header_id|>
+Thủ đô của Canada là gì?<|eot_id|>
+
+<|start_header_id|>assistant<|end_header_id|>
+```
+
+### Granite — Dùng Role Tags
+
+```
+<|system|>
+Bạn là một trợ lý AI chính xác và súc tích.
+<|user|>
+Thủ đô của Canada là gì?
+<|assistant|>
+```
+
+### Mistral — Dùng Instruction Tags
+
+```
+<s>[INST]Bạn là một trợ lý AI chính xác và súc tích.
+Thủ đô của Canada là gì?[/INST]
+```
+
+<Callout type="tip" title="Insight thực chiến">
+LLM không "suy nghĩ" như con người — nó dự đoán token theo xác suất. Special tokens giúp model hiểu đúng vai trò của từng phần input, từ đó đưa ra output đúng hơn.
+</Callout>
+
+---
+
+## 🏗️ Kiến Trúc App Thực Chiến
+
+Đủ lý thuyết rồi, hãy build app! Chúng ta sẽ tạo cấu trúc modular, dễ maintain:
+
+```
+genai_flask_app/
+├── config.py      # Centralize cấu hình model
+├── model.py       # Logic AI (LangChain integration)
+├── app.py         # Flask API routes
+└── templates/
+    └── index.html # Frontend
+```
+
+### Bước 1: `config.py` — Centralize Cấu Hình
+
+```python
+# config.py
+from ibm_watsonx_ai.metanames import GenTextParamsMetaNames as GenParams
+
+PARAMETERS = {
+    GenParams.DECODING_METHOD: "greedy",
+    GenParams.MAX_NEW_TOKENS: 256,
+}
+
+CREDENTIALS = {
+    "url": "https://us-south.ml.cloud.ibm.com",
+    "project_id": "skills-network"
+}
+
+# Model IDs — đổi ở đây để thử model khác, không cần sửa code logic
+LLAMA_MODEL_ID = "meta-llama/llama-3-2-11b-vision-instruct"
+GRANITE_MODEL_ID = "ibm/granite-4-h-small"
+MISTRAL_MODEL_ID = "mistralai/mistral-small-3-1-24b-instruct-2503"
+```
+
+### Bước 2: `model.py` — AI Logic Với LangChain
+
+```python
+# model.py
+from langchain_ibm import ChatWatsonx
+from langchain_core.prompts import PromptTemplate
+from langchain_core.output_parsers import JsonOutputParser
+from pydantic import BaseModel, Field
+from config import PARAMETERS, LLAMA_MODEL_ID, GRANITE_MODEL_ID, MISTRAL_MODEL_ID
+
+# --- Định nghĩa cấu trúc output với Pydantic ---
+class AIResponse(BaseModel):
+    summary: str = Field(description="Tóm tắt nội dung tin nhắn của user")
+    sentiment: int = Field(description="Điểm cảm xúc từ 0 (tiêu cực) đến 100 (tích cực)")
+    response: str = Field(description="Câu trả lời gợi ý cho user")
+
+# JSON parser — tự động validate và parse output
+json_parser = JsonOutputParser(pydantic_object=AIResponse)
+
+# --- Khởi tạo models ---
+def initialize_model(model_id):
+    return ChatWatsonx(
+        model_id=model_id,
+        url="https://us-south.ml.cloud.ibm.com",
+        project_id="skills-network",
+        params=PARAMETERS
+    )
+
+llama_llm = initialize_model(LLAMA_MODEL_ID)
+granite_llm = initialize_model(GRANITE_MODEL_ID)
+mistral_llm = initialize_model(MISTRAL_MODEL_ID)
+
+# --- Prompt Templates ---
+llama_template = PromptTemplate(
+    template='''<|begin_of_text|><|start_header_id|>system<|end_header_id|>
+{system_prompt}
+{format_prompt}<|eot_id|><|start_header_id|>user<|end_header_id|>
+{user_prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>
+''',
+    input_variables=["system_prompt", "format_prompt", "user_prompt"]
+)
+
+granite_template = PromptTemplate(
+    template="System: {system_prompt}\n{format_prompt}\nHuman: {user_prompt}\nAI:",
+    input_variables=["system_prompt", "format_prompt", "user_prompt"]
+)
+
+mistral_template = PromptTemplate(
+    template="<s>[INST]{system_prompt}\n{format_prompt}\n{user_prompt}[/INST]",
+    input_variables=["system_prompt", "format_prompt", "user_prompt"]
+)
+
+# --- Core function: chaining template | model | parser ---
+def get_ai_response(model, template, system_prompt, user_prompt):
+    chain = template | model | json_parser
+    return chain.invoke({
+        'system_prompt': system_prompt,
+        'user_prompt': user_prompt,
+        'format_prompt': json_parser.get_format_instructions()
+    })
+
+def llama_response(system_prompt, user_prompt):
+    return get_ai_response(llama_llm, llama_template, system_prompt, user_prompt)
+
+def granite_response(system_prompt, user_prompt):
+    return get_ai_response(granite_llm, granite_template, system_prompt, user_prompt)
+
+def mistral_response(system_prompt, user_prompt):
+    return get_ai_response(mistral_llm, mistral_template, system_prompt, user_prompt)
+```
+
+### Giải Thích Chain `template | model | json_parser`
+
+Đây là **LCEL (LangChain Expression Language)** — một trong những tính năng đẹp nhất của LangChain:
+
+```
+Input dict
+    ↓
+PromptTemplate  → Format prompt với special tokens phù hợp model
+    ↓
+ChatWatsonx     → Gọi LLM, nhận raw text response
+    ↓
+JsonOutputParser → Parse raw text thành Python dict có cấu trúc
+    ↓
+Output: {"summary": "...", "sentiment": 75, "response": "..."}
+```
+
+### Bước 3: `app.py` — Flask API
+
+```python
+# app.py
+from flask import Flask, request, jsonify, render_template
+from model import llama_response, granite_response, mistral_response
+import time
+
+app = Flask(__name__)
+
+@app.route('/', methods=['GET'])
+def index():
+    return render_template('index.html')
+
+@app.route('/generate', methods=['POST'])
+def generate():
+    data = request.json
+    user_message = data.get('message')
+    model = data.get('model')
+
+    if not user_message or not model:
+        return jsonify({"error": "Thiếu message hoặc model selection"}), 400
+
+    system_prompt = "Bạn là một AI assistant hỗ trợ customer service. Hãy đưa ra câu trả lời hữu ích và súc tích."
+
+    start_time = time.time()
+
+    try:
+        if model == 'llama':
+            result = llama_response(system_prompt, user_message)
+        elif model == 'granite':
+            result = granite_response(system_prompt, user_message)
+        elif model == 'mistral':
+            result = mistral_response(system_prompt, user_message)
+        else:
+            return jsonify({"error": "Model không hợp lệ"}), 400
+
+        result['duration'] = round(time.time() - start_time, 2)
+        return jsonify(result)
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+
+---
+
+## 📊 Pydantic + JsonOutputParser — Vũ Khí Bí Mật
+
+Thay vì nhận raw text như:
+```
+Người dùng có vẻ đang thất vọng. Tôi nghĩ bạn nên trả lời...
+```
+
+Bạn nhận được cấu trúc JSON parse-ready:
+```json
+{
+  "summary": "Người dùng báo cáo sản phẩm bị lỗi sau 2 tuần sử dụng",
+  "sentiment": 15,
+  "response": "Chúng tôi xin lỗi vì sự bất tiện này. Vui lòng cho biết mã đơn hàng để chúng tôi hỗ trợ đổi/trả sản phẩm."
+}
+```
+
+### Mở Rộng Schema Dễ Dàng
+
+Muốn thêm field? Chỉ update class `AIResponse` — không cần đụng vào logic khác:
+
+```python
+class AIResponse(BaseModel):
+    summary: str = Field(description="Tóm tắt nội dung tin nhắn")
+    sentiment: int = Field(description="Điểm cảm xúc từ 0 đến 100")
+    category: str = Field(description="Loại yêu cầu: billing, technical, general, complaint")
+    action: str = Field(description="Hành động tiếp theo mà support rep nên thực hiện")
+    response: str = Field(description="Câu trả lời gợi ý cho khách hàng")
+```
+
+`get_format_instructions()` sẽ tự động cập nhật prompt với schema mới!
+
+---
+
+## 🧪 Test 3 Models Cùng Lúc
+
+```python
+# llm_test.py
+from model import llama_response, granite_response, mistral_response
+
+def call_all_models(system_prompt, user_prompt):
+    for name, fn in [("Llama", llama_response), ("Granite", granite_response), ("Mistral", mistral_response)]:
+        result = fn(system_prompt, user_prompt)
+        print(f"\n{'='*20} {name} {'='*20}")
+        print(f"Summary  : {result['summary']}")
+        print(f"Sentiment: {result['sentiment']}/100")
+        print(f"Response : {result['response']}")
+
+call_all_models(
+    "Bạn là AI assistant hỗ trợ customer service.",
+    "Sản phẩm tôi mua bị lỗi sau 2 tuần, rất thất vọng!"
+)
+```
+
+---
+
+## 🚀 Chạy App Hoàn Chỉnh
+
+```bash
+# Tải frontend assets
+mkdir static
+wget -O static/script.js "https://gist.githubusercontent.com/tenzinmigmar/0168709391266a8d8da7936f1a866c71/raw/95f4f4e1a1966b3f5183dd2f822cfcfd08d2238a/script.js"
+wget -O static/styles.css "https://gist.githubusercontent.com/tenzinmigmar/278575598f79a4940993a1fc8640a60a/raw/24eda98885e854b01b4a46d1756112e91d3acc10/styles.css"
+
+# Chạy Flask
+python app.py
+```
+
+Mở `http://localhost:5000`, chọn model, gõ tin nhắn và xem AI phân tích sentiment + đề xuất câu trả lời!
+
+---
+
+## 💡 Lessons Learned
+
+**1. Mỗi LLM có "ngôn ngữ" riêng** — Đừng dùng chung một prompt format cho Llama, Granite và Mistral. Mỗi model cần special tokens đặc thù.
+
+**2. LangChain `|` operator là vũ khí mạnh** — Chain `template | model | parser` biến pipeline AI phức tạp thành code đọc được như tiếng Anh.
+
+**3. Pydantic = Hợp đồng với AI** — Thay vì parse raw string bằng regex (dễ vỡ), hãy định nghĩa schema trước và để `JsonOutputParser` enforce nó.
+
+**4. Modular từ đầu, không từ sau** — Tách `config.py`, `model.py`, `app.py` ngay từ đầu giúp bạn switch model, thêm field, hoặc mở rộng tính năng mà không cần refactor.
+
+---
+
+## 🔮 Phần 2 Preview
+
+Ở **Phần 2**, chúng ta sẽ nâng cấp app lên level tiếp theo:
+
+- **Conversation Memory** — Làm sao để AI "nhớ" context của cả cuộc hội thoại
+- **Streaming Response** — Trả về output từng token một thay vì chờ cả response
+- **LangChain Agent** — Để AI tự quyết định công cụ nào cần dùng để giải quyết task
+
+Hẹn gặp lại ở Phần 2! 🚀

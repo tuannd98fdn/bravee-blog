@@ -60,8 +60,9 @@ export function getAllPosts(category?: string, lang?: string): PostMeta[] {
     // Determine language from path
     const fileLang = pathParts.includes('vi') ? 'vi' : 'en';
     
-    // Generate slug from filename
-    const slug = path.basename(filePath, path.extname(filePath));
+    // Generate slug from filename (strip YYYY-MM-DD- prefix if present)
+    const rawSlug = path.basename(filePath, path.extname(filePath));
+    const slug = rawSlug.replace(/^\d{4}-\d{2}-\d{2}-/, '');
 
     const stats = readingTime(content);
 
@@ -92,7 +93,8 @@ export function getPostBySlug(slug: string): Post | null {
   const files = getFilesRecursively(CONTENT_DIR);
   
   const filePath = files.find((f) => {
-    const fileSlug = path.basename(f, path.extname(f));
+    const rawSlug = path.basename(f, path.extname(f));
+    const fileSlug = rawSlug.replace(/^\d{4}-\d{2}-\d{2}-/, '');
     return fileSlug === slug;
   });
 
