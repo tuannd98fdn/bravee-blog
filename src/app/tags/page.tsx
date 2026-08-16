@@ -8,14 +8,15 @@ export const metadata: Metadata = {
   description: 'Browse all blog posts by topic.',
 };
 
-export default function TagsPage() {
-  const tags = getAllTags();
+export default async function TagsPage() {
+  const tags = await getAllTags();
   
   // Count posts per tag to display
-  const tagsWithCounts = tags.map(tag => ({
+  const tagsWithCounts = await Promise.all(tags.map(async tag => ({
     name: tag,
-    count: getPostsByTag(tag).length
-  })).sort((a, b) => b.count - a.count); // Sort by most used
+    count: (await getPostsByTag(tag)).length
+  })));
+  tagsWithCounts.sort((a, b) => b.count - a.count); // Sort by most used
 
   return (
     <div className={styles.container}>

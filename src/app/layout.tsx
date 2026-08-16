@@ -3,8 +3,12 @@ import './globals.css';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Chatbot from '@/components/ui/Chatbot';
+import { Inter, JetBrains_Mono } from 'next/font/google';
+import { ThemeProvider } from '@/components/layout/ThemeProvider';
 import { Analytics } from '@vercel/analytics/react';
 
+const inter = Inter({ subsets: ['latin'], variable: '--font-sans', display: 'swap' });
+const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' });
 export const metadata: Metadata = {
   title: {
     default: 'Bravee — Tech Blog',
@@ -48,31 +52,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" data-theme="dark" data-scroll-behavior="smooth" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              (function() {
-                try {
-                  var theme = localStorage.getItem('theme');
-                  if (theme === 'light' || theme === 'dark') {
-                    document.documentElement.setAttribute('data-theme', theme);
-                  } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-                    document.documentElement.setAttribute('data-theme', 'light');
-                  }
-                } catch (e) {}
-              })();
-            `,
-          }}
-        />
-      </head>
+    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
+      <head />
       <body>
-        <Header />
-        <main>{children}</main>
-        <Footer />
-        <Chatbot />
-        <Analytics />
+        <ThemeProvider attribute="data-theme" defaultTheme="dark" enableSystem>
+          <Header />
+          <main>{children}</main>
+          <Footer />
+          <Chatbot />
+          <Analytics />
+        </ThemeProvider>
       </body>
     </html>
   );

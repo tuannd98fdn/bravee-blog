@@ -10,7 +10,7 @@ interface Props {
 }
 
 export async function generateStaticParams() {
-  const tags = getAllTags();
+  const tags = await getAllTags();
   return tags.map((tag) => ({ tag: tag.toLowerCase() }));
 }
 
@@ -29,14 +29,14 @@ export default async function TagPage({ params }: Props) {
   const decodedTag = decodeURIComponent(tag);
   
   // Find original tag casing
-  const allTags = getAllTags();
+  const allTags = await getAllTags();
   const originalTag = allTags.find(t => t.toLowerCase() === decodedTag.toLowerCase());
 
   if (!originalTag) {
     notFound();
   }
 
-  const posts = getPostsByTag(originalTag);
+  const posts = await getPostsByTag(originalTag);
 
   return (
     <div className={styles.container}>

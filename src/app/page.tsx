@@ -13,8 +13,8 @@ const ROADMAP_TOPICS = [
   { name: 'System Design', emoji: '🏗️', color: '#10B981', comingSoon: true },
 ];
 
-export default function HomePage() {
-  const posts = getAllPosts();
+export default async function HomePage() {
+  const posts = await getAllPosts();
   const latestPosts = posts.slice(0, 5);
 
   return (

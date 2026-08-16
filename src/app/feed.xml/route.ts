@@ -14,7 +14,7 @@ export async function GET() {
     copyright: `All rights reserved ${new Date().getFullYear()}, Bravee`,
   });
 
-  const posts = getAllPosts('blog');
+  const posts = await getAllPosts('blog');
 
   posts.forEach((post) => {
     feed.item({

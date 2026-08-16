@@ -1,10 +1,10 @@
 import { MetadataRoute } from 'next';
 import { getAllPosts } from '@/lib/mdx';
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://bravee.dev';
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
   
-  const posts = getAllPosts();
+  const posts = await getAllPosts();
   
   const postUrls = posts.map((post) => ({
     url: `${baseUrl}/blog/${post.slug}`,

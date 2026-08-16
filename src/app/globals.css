@@ -4,9 +4,6 @@
    Benchmark: Vercel, Linear, Raycast
    ============================================ */
 
-/* ---------- Google Fonts ---------- */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
-
 /* ---------- CSS Custom Properties ---------- */
 :root {
   /* Typography */
@@ -50,6 +47,20 @@
   --content-width: 672px;
   --page-width:    1200px;
   --nav-height:    64px;
+
+  /* Z-Index System */
+  --z-hide: -1;
+  --z-base: 0;
+  --z-docked: 10;
+  --z-dropdown: 1000;
+  --z-sticky: 1100;
+  --z-banner: 1200;
+  --z-overlay: 1300;
+  --z-modal: 1400;
+  --z-popover: 1500;
+  --z-skip-link: 1600;
+  --z-toast: 1700;
+  --z-tooltip: 1800;
 
   /* Radius */
   --radius-sm:   6px;
@@ -164,6 +175,7 @@ html {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -284,8 +296,8 @@ pre code {
 
 /* ---------- Focus ---------- */
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent);
   border-radius: var(--radius-sm);
 }
 
@@ -369,7 +381,21 @@ img {
   margin: 0 auto;
 }
 
+.no-scroll {
+  overflow: hidden;
+}
+
 /* ---------- Animations ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  html { scroll-behavior: auto; }
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }

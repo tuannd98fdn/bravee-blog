@@ -7,9 +7,9 @@ export const metadata: Metadata = {
   description: 'Articles about AI, Cloud, Java, Angular, and the journey from junior to senior developer.',
 };
 
-export default function BlogPage() {
-  const posts = getAllPosts('blog');
-  const tags = getAllTags();
+export default async function BlogPage() {
+  const posts = await getAllPosts('blog');
+  const tags = await getAllTags();
 
   return <BlogList posts={posts} tags={tags} />;
 }

@@ -58,18 +58,18 @@ export async function POST(req: Request) {
 
     // Simple RAG: find relevant posts from the last user message
     const lastUserMsg = [...messages].reverse().find((m: { role: string; content: string }) => m.role === 'user')?.content ?? '';
-    const allPosts = getAllPosts();
+    const allPosts = await getAllPosts();
     const relevantPosts = searchPosts(allPosts, lastUserMsg).slice(0, 3);
 
     let ragContext = '\n\nCÁC BÀI VIẾT TRÊN BLOG:\n';
     if (relevantPosts.length > 0) {
       for (const post of relevantPosts) {
-        const full = getPostBySlug(post.slug);
+        const full = await getPostBySlug(post.slug);
         ragContext += `\n### ${post.title}\nURL: /blog/${post.slug}\nMô tả: ${post.description}\n`;
-        if (full) ragContext += `Nội dung: ${full.content.substring(0, 800)}...\n`;
+        if (full) ragContext += `Nội dung: ${full.content.substring(0, 400)}...\n`;
       }
     } else {
-      allPosts.slice(0, 6).forEach(p => {
+      allPosts.slice(0, 3).forEach(p => {
         ragContext += `- **${p.title}** (/blog/${p.slug}): ${p.description}\n`;
       });
     }

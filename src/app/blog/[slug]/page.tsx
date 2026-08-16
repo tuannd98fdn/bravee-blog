@@ -10,13 +10,13 @@ interface Props {
 }
 
 export async function generateStaticParams() {
-  const posts = getAllPosts('blog');
+  const posts = await getAllPosts('blog');
   return posts.map((post) => ({ slug: post.slug }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = await getPostBySlug(slug);
   if (!post) return {};
 
   return {
@@ -42,21 +42,40 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function BlogPostPage({ params }: Props) {
   const { slug } = await params;
-  const post = getPostBySlug(slug);
+  const post = await getPostBySlug(slug);
 
   if (!post) {
     notFound();
   }
 
-  const { prev, next } = getAdjacentPosts(slug);
+  const { prev, next } = await getAdjacentPosts(slug);
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.meta.title,
+    datePublished: post.meta.date,
+    dateModified: post.meta.date,
+    description: post.meta.description,
+    author: {
+      '@type': 'Person',
+      name: 'Bravee',
+    },
+  };
 
   return (
-    <BlogPostContent
-      post={post}
-      prevPost={prev}
-      nextPost={next}
-    >
-      <MDXRemote source={post.content} components={mdxComponents} />
-    </BlogPostContent>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <BlogPostContent
+        post={post}
+        prevPost={prev}
+        nextPost={next}
+      >
+        <MDXRemote source={post.content} components={mdxComponents} />
+      </BlogPostContent>
+    </>
   );
 }

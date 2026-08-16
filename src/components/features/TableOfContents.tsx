@@ -14,35 +14,32 @@ export default function TableOfContents() {
   const [activeId, setActiveId] = useState<string>('');
 
   useEffect(() => {
-    // Wait for MDX content to render
-    setTimeout(() => {
-      const elements = Array.from(document.querySelectorAll('.prose h2, .prose h3'))
-        .filter((element) => element.id)
-        .map((element) => ({
-          id: element.id,
-          text: element.textContent || '',
-          level: Number(element.tagName.substring(1)),
-        }));
-      setHeadings(elements);
+    const elements = Array.from(document.querySelectorAll('.prose h2, .prose h3'))
+      .filter((element) => element.id)
+      .map((element) => ({
+        id: element.id,
+        text: element.textContent || '',
+        level: Number(element.tagName.substring(1)),
+      }));
+    setHeadings(elements);
 
-      const observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              setActiveId(entry.target.id);
-            }
-          });
-        },
-        { rootMargin: '0px 0px -80% 0px' }
-      );
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveId(entry.target.id);
+          }
+        });
+      },
+      { rootMargin: '0px 0px -80% 0px' }
+    );
 
-      elements.forEach((heading) => {
-        const el = document.getElementById(heading.id);
-        if (el) observer.observe(el);
-      });
+    elements.forEach((heading) => {
+      const el = document.getElementById(heading.id);
+      if (el) observer.observe(el);
+    });
 
-      return () => observer.disconnect();
-    }, 100);
+    return () => observer.disconnect();
   }, []);
 
   if (headings.length === 0) return null;

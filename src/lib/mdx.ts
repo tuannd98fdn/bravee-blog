@@ -23,16 +23,16 @@ export interface Post {
 
 const CONTENT_DIR = path.join(process.cwd(), 'content');
 
-function getFilesRecursively(dir: string): string[] {
+async function getFilesRecursively(dir: string): Promise<string[]> {
   if (!fs.existsSync(dir)) return [];
   
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  const entries = await fs.promises.readdir(dir, { withFileTypes: true });
   const files: string[] = [];
 
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      files.push(...getFilesRecursively(fullPath));
+      files.push(...(await getFilesRecursively(fullPath)));
     } else if (entry.name.endsWith('.mdx') || entry.name.endsWith('.md')) {
       files.push(fullPath);
     }
@@ -41,15 +41,15 @@ function getFilesRecursively(dir: string): string[] {
   return files;
 }
 
-export function getAllPosts(category?: string, lang?: string): PostMeta[] {
+export async function getAllPosts(category?: string, lang?: string): Promise<PostMeta[]> {
   const searchDir = category 
     ? path.join(CONTENT_DIR, category) 
     : CONTENT_DIR;
   
-  const files = getFilesRecursively(searchDir);
+  const files = await getFilesRecursively(searchDir);
   
-  const posts = files.map((filePath) => {
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
+  const postsPromises = files.map(async (filePath) => {
+    const fileContent = await fs.promises.readFile(filePath, 'utf-8');
     const { data, content } = matter(fileContent);
     
     // Determine category from path
@@ -80,6 +80,8 @@ export function getAllPosts(category?: string, lang?: string): PostMeta[] {
     } as PostMeta;
   });
 
+  const posts = await Promise.all(postsPromises);
+
   // Filter by language if specified
   const filtered = lang ? posts.filter(p => p.lang === lang) : posts;
 
@@ -89,8 +91,8 @@ export function getAllPosts(category?: string, lang?: string): PostMeta[] {
   );
 }
 
-export function getPostBySlug(slug: string): Post | null {
-  const files = getFilesRecursively(CONTENT_DIR);
+export async function getPostBySlug(slug: string): Promise<Post | null> {
+  const files = await getFilesRecursively(CONTENT_DIR);
   
   const filePath = files.find((f) => {
     const rawSlug = path.basename(f, path.extname(f));
@@ -100,7 +102,7 @@ export function getPostBySlug(slug: string): Post | null {
 
   if (!filePath) return null;
 
-  const fileContent = fs.readFileSync(filePath, 'utf-8');
+  const fileContent = await fs.promises.readFile(filePath, 'utf-8');
   const { data, content } = matter(fileContent);
   
   const relativePath = path.relative(CONTENT_DIR, filePath);
@@ -127,21 +129,22 @@ export function getPostBySlug(slug: string): Post | null {
   };
 }
 
-export function getAllTags(): string[] {
-  const posts = getAllPosts();
+export async function getAllTags(): Promise<string[]> {
+  const posts = await getAllPosts();
   const tagSet = new Set<string>();
   posts.forEach(post => post.tags.forEach(tag => tagSet.add(tag)));
   return Array.from(tagSet).sort();
 }
 
-export function getPostsByTag(tag: string): PostMeta[] {
-  return getAllPosts().filter(post => 
+export async function getPostsByTag(tag: string): Promise<PostMeta[]> {
+  const posts = await getAllPosts();
+  return posts.filter(post => 
     post.tags.map(t => t.toLowerCase()).includes(tag.toLowerCase())
   );
 }
 
-export function getAdjacentPosts(slug: string): { prev: PostMeta | null; next: PostMeta | null } {
-  const posts = getAllPosts();
+export async function getAdjacentPosts(slug: string): Promise<{ prev: PostMeta | null; next: PostMeta | null }> {
+  const posts = await getAllPosts();
   const index = posts.findIndex(p => p.slug === slug);
   
   return {
