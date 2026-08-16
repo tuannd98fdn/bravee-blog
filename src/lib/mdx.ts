@@ -13,7 +13,10 @@ export interface PostMeta {
   readingTime: string;
   category: 'blog' | 'tutorial' | 'til' | 'project';
   image?: string;
+  coverImage?: string;
   featured?: boolean;
+  series?: string;
+  seriesOrder?: number;
 }
 
 export interface Post {
@@ -76,7 +79,10 @@ export async function getAllPosts(category?: string, lang?: string): Promise<Pos
       readingTime: stats.text,
       category: (data.category || fileCategory) as PostMeta['category'],
       image: data.image || null,
+      coverImage: data.coverImage || null,
       featured: data.featured || false,
+      series: data.series || null,
+      seriesOrder: data.seriesOrder || null,
     } as PostMeta;
   });
 
@@ -123,7 +129,10 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
       readingTime: stats.text,
       category: (data.category || fileCategory) as PostMeta['category'],
       image: data.image || null,
+      coverImage: data.coverImage || null,
       featured: data.featured || false,
+      series: data.series || null,
+      seriesOrder: data.seriesOrder || null,
     } as PostMeta,
     content,
   };
@@ -151,4 +160,20 @@ export async function getAdjacentPosts(slug: string): Promise<{ prev: PostMeta |
     prev: index < posts.length - 1 ? posts[index + 1] : null,
     next: index > 0 ? posts[index - 1] : null,
   };
+}
+
+export async function getAllSeries(): Promise<string[]> {
+  const posts = await getAllPosts();
+  const seriesSet = new Set<string>();
+  posts.forEach(post => {
+    if (post.series) seriesSet.add(post.series);
+  });
+  return Array.from(seriesSet).sort();
+}
+
+export async function getPostsBySeries(seriesName: string): Promise<PostMeta[]> {
+  const posts = await getAllPosts();
+  return posts
+    .filter(post => post.series === seriesName)
+    .sort((a, b) => (a.seriesOrder || 0) - (b.seriesOrder || 0));
 }

@@ -1,4 +1,4 @@
-import { getAllPosts, getAllTags } from '@/lib/mdx';
+import { getAllPosts, getAllTags, getAllSeries } from '@/lib/mdx';
 import type { Metadata } from 'next';
 import BlogList from './BlogList';
 
@@ -10,6 +10,7 @@ export const metadata: Metadata = {
 export default async function BlogPage() {
   const posts = await getAllPosts('blog');
   const tags = await getAllTags();
+  const series = await getAllSeries();
 
-  return <BlogList posts={posts} tags={tags} />;
+  return <BlogList posts={posts} tags={tags} seriesList={series} />;
 }
