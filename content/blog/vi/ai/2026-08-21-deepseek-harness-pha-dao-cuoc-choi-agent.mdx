@@ -1,0 +1,256 @@
+---
+title: "DeepSeek Harness — Framework Agent Open-Source Đang Phá Đảo Cuộc Chơi"
+date: "2026-08-21"
+description: "Deep dive vào DeepSeek Harness (dsh): kiến trúc plugin-first, so sánh với Claude Code & OpenAI Codex, và hướng dẫn bắt đầu. Tại sao 120K GitHub stars trong vài ngày đầu?"
+tags: ["AI", "DeepSeek", "Agent Framework", "Open Source", "TypeScript"]
+lang: "vi"
+---
+
+Ngày 13/08/2026, DeepSeek AI âm thầm thả [một repo lên GitHub](https://github.com/deepseek-ai/deepseek-harness). Không trống không kèn, không keynote hoành tráng.
+
+Trong vòng **vài ngày**, nó cán mốc **120,000 GitHub stars**.
+
+Cái tên đó là **DeepSeek Harness** — hay gọi tắt là `dsh`. Và nó đang khiến cả Anthropic lẫn OpenAI phải nhìn lại bàn cờ.
+
+---
+
+## 🤔 DeepSeek Harness Là Gì?
+
+Nếu bạn đã quen với Claude Code hay OpenAI Codex, thì DeepSeek Harness nằm cùng trường đấu đó — nhưng với một triết lý hoàn toàn khác.
+
+**`dsh` không phải một AI model.** Nó là một **agent runtime** — bộ khung hạ tầng giúp biến một LLM thành một agent tự chủ: có thể đọc/ghi file, chạy lệnh terminal, gọi tool, duyệt web, và hoạt động liên tục mà không cần bạn cầm tay chỉ việc.
+
+Nếu LLM là bộ não, thì **Harness chính là cơ thể** — cho nó tay, chân, mắt, và khả năng tương tác với thế giới thực.
+
+<Callout type="info" title="Tại sao gọi là 'Harness'?">
+Trong ngành, "harness" nghĩa là "bộ dây đai" — thứ giữ cho một thực thể mạnh mẽ (LLM) hoạt động trong khuôn khổ, an toàn, và có kiểm soát. Cái tên nói lên cả triết lý thiết kế.
+</Callout>
+
+---
+
+## 🧬 Kiến Trúc: "Everything Is A Plugin"
+
+Đây là điểm đột phá lớn nhất của `dsh`, và cũng là lý do nó khiến developer phát cuồng.
+
+### Vấn Đề Với Framework Truyền Thống
+
+Hầu hết agent framework hiện tại (LangChain, CrewAI...) có kiến trúc **nguyên khối (monolithic)**. Agent loop, tool registry, model adapter — tất cả được "cứng hoá" trong core. Muốn đổi cách Agent suy nghĩ? Fork toàn bộ repo. Muốn thay sandbox? Viết lại nửa codebase.
+
+### Cách `dsh` Giải Quyết: Cordis Kernel
+
+DeepSeek Harness được xây trên **Cordis** — một meta-framework theo kiến trúc **micro-kernel**. Mọi thứ đều là plugin:
+
+| Thành phần | Truyền thống | DeepSeek Harness |
+|---|---|---|
+| Agent Loop | Hard-coded | ✅ Plugin, swap được |
+| Model Adapter | Cố định 1 provider | ✅ Plugin, đổi model bất kỳ |
+| Tool Registry | Built-in cứng | ✅ Plugin, thêm/xoá runtime |
+| Session Store | In-memory cố định | ✅ Plugin (Redis, SQLite, file...) |
+| Sandbox | Phụ thuộc platform | ✅ Plugin (local, Docker, cloud...) |
+| UI | Không có hoặc cố định | ✅ Plugin (Web UI, CLI, API...) |
+
+Cordis quản lý **lifecycle** của từng plugin: mount, unmount, dependency tracking. Khi bạn gỡ một plugin, kernel tự dọn sạch state — không bị "zombie listener" hay memory leak.
+
+```typescript
+import type { Context } from "@deepseek-ai/cordis";
+
+export const name = "my-custom-tool";
+
+export function apply(ctx: Context) {
+  ctx.using(["tools"], (tools) => {
+    tools.register("search_jira", {
+      description: "Tìm issue trên Jira theo keyword",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Từ khoá tìm kiếm" }
+        }
+      },
+      execute: async ({ query }) => {
+        const res = await fetch(`https://jira.company.com/search?q=${query}`);
+        return await res.json();
+      }
+    });
+  });
+}
+```
+
+<Callout type="tip" title="Hiểu đơn giản">
+Nếu LangChain giống một chiếc xe nguyên khối — muốn thay bánh xe phải tháo cả gầm, thì `dsh` giống LEGO Technic: mỗi mảnh ghép có khớp nối chuẩn, lắp vào tháo ra thoải mái.
+</Callout>
+
+---
+
+## ⚔️ So Sánh: DeepSeek Harness vs Claude Code vs OpenAI Codex
+
+Đây là câu hỏi mà mọi developer đều muốn biết. Ba "ông lớn" agent hiện tại khác nhau thế nào?
+
+| | **Claude Code** | **OpenAI Codex** | **DeepSeek Harness** |
+|---|---|---|---|
+| **Triết lý** | "It just works" — terminal-first | Ecosystem + background tasks | "Everything is a plugin" |
+| **Open Source** | ❌ Closed | ❌ Closed | ✅ MIT License |
+| **Kiến trúc** | Monolithic, tối ưu cho Claude | Cloud sandbox, proprietary | Micro-kernel, Cordis-based |
+| **Tuỳ biến** | Thấp (workflow cố định) | Trung bình (Skills) | Rất cao (swap mọi thứ) |
+| **Chi phí** | 💰💰💰 Cao | 💰💰 Trung bình | 💰 Rất thấp (30-100x rẻ hơn) |
+| **Độ chín** | ⭐⭐⭐⭐⭐ Mature | ⭐⭐⭐⭐ Stable | ⭐⭐ Developer Preview |
+| **Best for** | Complex refactoring | Team + batch automation | Custom agent stack |
+
+### Khi Nào Chọn Cái Nào?
+
+- **Claude Code:** Bạn cần agent "out-of-the-box" mạnh nhất, làm refactoring phức tạp, và sẵn sàng trả tiền. Đây vẫn là "gold standard" về chất lượng code generation.
+
+- **OpenAI Codex:** Team bạn đã ở trong hệ sinh thái OpenAI, cần chạy nhiều task song song ở background (CI/CD, issue triage, batch jobs).
+
+- **DeepSeek Harness:** Bạn là "power user" muốn kiểm soát toàn bộ stack, tối ưu chi phí, hoặc công ty có yêu cầu **data sovereignty** (dữ liệu không được ra ngoài).
+
+<Callout type="tip" title="Góc nhìn thực tế">
+Cuộc chiến agent 2026 không còn là "model nào thông minh nhất?" mà là "harness nào cho bạn kiểm soát nhiều nhất với chi phí thấp nhất?". Và ở tiêu chí đó, `dsh` đang dẫn đầu.
+</Callout>
+
+---
+
+## 🏗️ 4 Runtime Modes
+
+`dsh` không phải kiểu "one size fits all". Nó có 4 chế độ chạy, mỗi cái phục vụ một mục đích:
+
+| Mode | Mục đích | Use case thực tế |
+|---|---|---|
+| **Standard** | Agent đầy đủ | Coding assistant hàng ngày |
+| **Code** | SDK programmatic | Tích hợp CI/CD, automation |
+| **Minimal** | Benchmarking | Đo hiệu năng model |
+| **Creative** | Thí nghiệm plugin | Debug, prototyping |
+
+### 1. Standard Mode
+Agent đầy đủ: shell, web retrieval, file system. Đây là chế độ bạn dùng khi muốn `dsh` hoạt động như một coding assistant hoàn chỉnh — tương tự cách bạn dùng Claude Code hay Cursor. Mở terminal, giao task, để agent tự xử lý.
+
+### 2. Code Mode
+Expose một SDK cho phép model chạy multi-step tool calls lập trình hoá. Phù hợp khi bạn muốn nhúng `dsh` vào pipeline CI/CD: ví dụ tự động review PR, chạy linter rồi fix lỗi, hoặc generate migration scripts mỗi khi có commit mới.
+
+### 3. Minimal Mode
+Môi trường shell cô lập, tối giản, chuyên dùng cho **benchmarking**. Mọi feature không cần thiết bị strip — chỉ còn lại model + shell + filesystem. DeepSeek dùng chính mode này để đo điểm cho V4-Pro-0813:
+
+| Benchmark | Điểm |
+|---|---|
+| Terminal Bench 2.1 | 87.9 |
+| Toolathlon-Verified | 74.1 |
+| DSBench-FullStack | 71.1 |
+
+### 4. Creative Mode
+Chế độ thí nghiệm — inspect runtime, debug plugin, và chơi với các tổ hợp plugin khác nhau. Đây là nơi bạn prototype plugin mới, test xem 2 plugin có conflict không, hoặc đơn giản là "mổ xẻ" cách agent loop hoạt động bên trong.
+
+---
+
+## 🚀 Bắt Đầu Trong 5 Phút
+
+### Yêu Cầu
+- **Node.js** `^22.19.0` hoặc `>=24.0.0`
+- **DeepSeek API key** (hoặc API key của provider khác nếu bạn swap model adapter)
+
+### Chạy Web UI
+
+```bash
+npx @deepseek-ai/dsh web
+```
+
+Mở browser tại `http://127.0.0.1:3080` — xong. (Chi tiết hơn xem [README trên GitHub](https://github.com/deepseek-ai/deepseek-harness)).
+
+<Callout type="tip" title="⚠️ Cẩn thận với quyền truy cập">
+`dsh` có thể đọc/ghi file và chạy lệnh shell. Lần đầu chạy, nó sẽ yêu cầu bạn thiết lập permission policies. **Luôn chạy trong thư mục project riêng**, đừng bao giờ mở trong thư mục home hay folder chứa dữ liệu nhạy cảm.
+</Callout>
+
+### Viết Plugin Đầu Tiên
+
+Ví dụ này tạo một plugin đọc file trong project và trả về thống kê — khác pattern so với ví dụ Jira ở trên, để bạn thấy plugin có thể **inject nhiều service** cùng lúc:
+
+```typescript
+import type { Context } from "@deepseek-ai/cordis";
+import { readdir, stat } from "fs/promises";
+import { join } from "path";
+
+export default {
+  name: "project-stats",
+  inject: ["tools", "filesystem"],
+
+  apply(ctx: Context) {
+    ctx.using(["tools", "filesystem"], (tools, fs) => {
+      tools.register("project_stats", {
+        description: "Thống kê số file và tổng dung lượng của thư mục project",
+        parameters: {
+          type: "object",
+          properties: {
+            directory: { type: "string", description: "Đường dẫn thư mục" }
+          }
+        },
+        execute: async ({ directory }) => {
+          const files = await readdir(directory);
+          let totalSize = 0;
+          for (const file of files) {
+            const info = await stat(join(directory, file));
+            if (info.isFile()) totalSize += info.size;
+          }
+          return `📁 ${files.length} files, 💾 ${(totalSize / 1024).toFixed(1)} KB`;
+        }
+      });
+    });
+  }
+};
+```
+
+Build và chạy:
+
+```bash
+pnpm run build
+npx @deepseek-ai/dsh web
+```
+
+Vào Web UI, gõ *"Thống kê thư mục src cho mình"* — agent sẽ tự gọi tool `project_stats`.
+
+---
+
+## 🎯 Ai Nên Quan Tâm Đến DeepSeek Harness?
+
+### ✅ Nên thử nếu:
+- Bạn muốn **tự host agent** thay vì phụ thuộc cloud
+- Team bạn cần **tuỳ biến sâu** (custom tools, custom sandbox, custom model)
+- Bạn đang build **internal AI tooling** cho công ty
+- Chi phí là yếu tố quan trọng — `dsh` + DeepSeek V4 Flash rẻ hơn **30-100x** so với Claude Code
+- Bạn muốn **học kiến trúc agent** — đọc code của `dsh` là một masterclass
+
+### ❌ Chưa nên nếu:
+- Bạn cần giải pháp **production-ready ngay lập tức** — `dsh` vẫn ở `v0.1`, expect breaking changes
+- Bạn không thoải mái với TypeScript
+- Bạn chỉ cần một tool "gõ prompt → ra code" đơn giản — Claude Code hoặc Cursor phù hợp hơn
+
+---
+
+## ⚡ Hạn Chế Cần Biết
+
+Không có framework nào hoàn hảo, và `dsh` v0.1 có những giới hạn rất rõ:
+
+- **Documentation còn sơ sài:** Docs chính thức vẫn đang được viết. Hiện tại nguồn tham khảo tốt nhất là đọc source code và file `docs/development.md` trong repo.
+- **Community plugins chưa nhiều:** Ecosystem plugin mới hình thành. Nếu bạn cần tool X, khả năng cao bạn phải tự viết plugin thay vì install sẵn.
+- **Breaking changes liên tục:** Team DeepSeek cam kết "move fast". API surface có thể thay đổi giữa các version — plugin hôm nay viết, tuần sau có thể cần update.
+- **Chưa có test framework chuẩn:** Không có cách "official" để unit test plugin. Bạn phải tự setup test harness riêng.
+- **Thiếu enterprise features:** Chưa có SSO, audit logging, hay role-based access control. Đây là infra cho developer, chưa phải cho enterprise.
+
+<Callout type="info" title="Perspective">
+Đây là những hạn chế của v0.1 — đa phần sẽ được giải quyết khi community phát triển. Câu hỏi không phải "dsh có hoàn hảo không?" mà là "kiến trúc plugin-first có đúng hướng không?". Và câu trả lời từ 120K stars khá rõ ràng.
+</Callout>
+
+---
+
+## 💡 Nhận Định Cá Nhân
+
+DeepSeek Harness không phải là thứ sẽ thay thế Claude Code hay Codex — **ngay bây giờ**. Nó thô, nó developer preview, nó sẽ có breaking changes.
+
+Nhưng nó đại diện cho một **tầm nhìn kiến trúc vượt trội**: thay vì xây một monolith khổng lồ rồi cố gắng mở API cho developer, DeepSeek chọn cách **xây nền tảng trước, để cộng đồng xây phần còn lại**.
+
+120K stars trong vài ngày không phải hype. Đó là developer đang vote bằng chân — họ muốn **kiểm soát**, không muốn bị khoá trong walled garden.
+
+Và trong cuộc đua AI Agent 2026, cuộc chơi đang chuyển từ *"model nào thông minh nhất?"* sang *"hạ tầng nào linh hoạt nhất?"*.
+
+DeepSeek Harness đặt cược rằng câu trả lời là **plugin**.
+
+---
+
+*Theo dõi blog để cập nhật thêm các bài phân tích về AI Agent frameworks, LLMOps, và xu hướng AI mới nhất.*
