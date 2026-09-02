@@ -12,32 +12,66 @@ interface BlogListProps {
   seriesList: string[];
 }
 
+const CATEGORIES = [
+  { id: 'all', label: 'All Topics', emoji: '✨' },
+  { id: 'ai', label: 'AI & Agents', emoji: '🤖', matchTags: ['ai', 'llm', 'agent', 'rag', 'mcp', 'prompt engineering', 'langchain', 'langgraph', 'deepseek', 'glimmer', 'genai', 'vector database', 'function calling', 'loop engineering', 'memory', 'llmops', 'evals'] },
+  { id: 'cloud', label: 'Cloud & AWS', emoji: '☁️', matchTags: ['aws', 'sap-c02', 'iam', 'security', 'cloud'] },
+  { id: 'engineering', label: 'System & Architecture', emoji: '🏗️', matchTags: ['architecture', 'system design', 'java', 'angular', 'nextjs', 'typescript'] },
+  { id: 'career', label: 'Career & General', emoji: '🚀', matchTags: ['career', 'blogging', 'intro', 'general', 'learning'] },
+];
+
 export default function BlogList({ posts, tags, seriesList }: BlogListProps) {
   const [query, setQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+  const [selectedLang, setSelectedLang] = useState<'all' | 'vi' | 'en'>('all');
+  const [selectedSeries, setSelectedSeries] = useState<string | null>(null);
 
-  // Group tags into general topics roughly based on typical tech blogs
-  const topics = useMemo(() => {
-    // If you want actual tags from tags[], you could just use them.
-    // Or slice the top 10 tags. We'll show all tags as tabs for simplicity.
-    return tags;
-  }, [tags]);
+  // Available tags in currently selected category
+  const availableTags = useMemo(() => {
+    if (selectedCategory === 'all') return tags;
+    const cat = CATEGORIES.find(c => c.id === selectedCategory);
+    if (!cat || !cat.matchTags) return tags;
+    return tags.filter(t => cat.matchTags?.some(mt => t.toLowerCase().includes(mt) || mt.includes(t.toLowerCase())));
+  }, [tags, selectedCategory]);
 
   const filtered = useMemo(() => {
     let result = posts;
-    
+
+    // Filter by Language
+    if (selectedLang !== 'all') {
+      result = result.filter(p => p.lang === selectedLang);
+    }
+
+    // Filter by Series
+    if (selectedSeries) {
+      result = result.filter(p => p.series === selectedSeries);
+    }
+
+    // Filter by Category
+    if (selectedCategory !== 'all') {
+      const cat = CATEGORIES.find(c => c.id === selectedCategory);
+      if (cat && cat.matchTags) {
+        result = result.filter(p => 
+          p.tags.some(t => cat.matchTags?.some(mt => t.toLowerCase().includes(mt) || mt.includes(t.toLowerCase())))
+        );
+      }
+    }
+
+    // Filter by Specific Tag
     if (selectedTag) {
       result = result.filter(p => 
         p.tags.map(t => t.toLowerCase()).includes(selectedTag.toLowerCase())
       );
     }
-    
+
+    // Filter by Search Query
     if (query.trim()) {
       result = searchPosts(result, query);
     }
-    
+
     return result;
-  }, [posts, query, selectedTag]);
+  }, [posts, selectedLang, selectedSeries, selectedCategory, selectedTag, query]);
 
   // Featured Posts (top 3 featured posts, fallback to most recent)
   const featuredPosts = useMemo(() => {
@@ -45,6 +79,18 @@ export default function BlogList({ posts, tags, seriesList }: BlogListProps) {
     if (featured.length >= 3) return featured.slice(0, 3);
     return [...featured, ...posts.filter(p => !p.featured)].slice(0, 3);
   }, [posts]);
+
+  const isFilteringActive = Boolean(
+    selectedCategory !== 'all' || selectedTag || selectedLang !== 'all' || selectedSeries || query.trim()
+  );
+
+  const resetFilters = () => {
+    setSelectedCategory('all');
+    setSelectedTag(null);
+    setSelectedLang('all');
+    setSelectedSeries(null);
+    setQuery('');
+  };
 
   return (
     <div className={styles.page}>
@@ -56,9 +102,12 @@ export default function BlogList({ posts, tags, seriesList }: BlogListProps) {
       </div>
 
       {/* Khu 1: FeaturedBentoGrid */}
-      {!query && !selectedTag && featuredPosts.length >= 3 && (
+      {!isFilteringActive && featuredPosts.length >= 3 && (
         <section className={styles.featuredSection}>
-          <h2 className={styles.sectionTitle}>Featured Posts</h2>
+          <div className={styles.sectionHeaderRow}>
+            <h2 className={styles.sectionTitle}>Featured Posts</h2>
+            <span className={styles.sectionSubtitle}>Editor&apos;s pick</span>
+          </div>
           <div className={styles.featuredGrid}>
             <div className={styles.featuredItemLarge}>
               <BlogCard post={featuredPosts[0]} />
@@ -78,44 +127,103 @@ export default function BlogList({ posts, tags, seriesList }: BlogListProps) {
       )}
 
       {/* Khu 2: SeriesCarousel */}
-      {!query && !selectedTag && seriesList.length > 0 && (
+      {!isFilteringActive && seriesList.length > 0 && (
         <section className={styles.seriesSection}>
-          <h2 className={styles.sectionTitle}>Series</h2>
+          <div className={styles.sectionHeaderRow}>
+            <h2 className={styles.sectionTitle}>Featured Series</h2>
+            <span className={styles.sectionSubtitle}>Curated learning tracks</span>
+          </div>
           <div className={styles.seriesCarousel}>
             {seriesList.map(series => {
               const count = posts.filter(p => p.series === series).length;
               return (
-                <div key={series} className={styles.seriesCard}>
+                <button
+                  key={series}
+                  className={`${styles.seriesCard} ${selectedSeries === series ? styles.seriesCardActive : ''}`}
+                  onClick={() => setSelectedSeries(series)}
+                >
+                  <span className={styles.seriesBadge}>Series</span>
                   <h3 className={styles.seriesCardTitle}>{series}</h3>
-                  <p className={styles.seriesCardDesc}>{count} {count === 1 ? 'post' : 'posts'}</p>
-                </div>
+                  <p className={styles.seriesCardDesc}>
+                    {count} {count === 1 ? 'part' : 'parts'} · Explore series →
+                  </p>
+                </button>
               );
             })}
           </div>
         </section>
       )}
 
-      {/* Khu 3: TopicTabs & Search */}
+      {/* Khu 3: Controls, Category Tabs, Language & Search */}
       <section className={styles.controls}>
-        <h2 className={styles.sectionTitle}>All Posts</h2>
-        <div className={styles.topicTabs}>
-          <button
-            className={`${styles.topicTab} ${!selectedTag ? styles.topicTabActive : ''}`}
-            onClick={() => setSelectedTag(null)}
-          >
-            All Topics
-          </button>
-          {topics.map(topic => (
+        <div className={styles.controlsTop}>
+          <h2 className={styles.sectionTitle}>All Posts</h2>
+          
+          {/* Language Switcher */}
+          <div className={styles.langSwitch}>
             <button
-              key={topic}
-              className={`${styles.topicTab} ${selectedTag === topic ? styles.topicTabActive : ''}`}
-              onClick={() => setSelectedTag(topic)}
+              className={`${styles.langBtn} ${selectedLang === 'all' ? styles.langBtnActive : ''}`}
+              onClick={() => setSelectedLang('all')}
             >
-              {topic}
+              All
+            </button>
+            <button
+              className={`${styles.langBtn} ${selectedLang === 'vi' ? styles.langBtnActive : ''}`}
+              onClick={() => setSelectedLang('vi')}
+              title="Tiếng Việt"
+            >
+              🇻🇳 VI
+            </button>
+            <button
+              className={`${styles.langBtn} ${selectedLang === 'en' ? styles.langBtnActive : ''}`}
+              onClick={() => setSelectedLang('en')}
+              title="English"
+            >
+              🇺🇸 EN
+            </button>
+          </div>
+        </div>
+
+        {/* Category Tabs */}
+        <div className={styles.categoryTabs}>
+          {CATEGORIES.map(cat => (
+            <button
+              key={cat.id}
+              className={`${styles.categoryTab} ${selectedCategory === cat.id ? styles.categoryTabActive : ''}`}
+              onClick={() => {
+                setSelectedCategory(cat.id);
+                setSelectedTag(null);
+              }}
+            >
+              <span>{cat.emoji}</span>
+              <span>{cat.label}</span>
             </button>
           ))}
         </div>
 
+        {/* Tag Sub-filter (when relevant) */}
+        {availableTags.length > 0 && selectedCategory !== 'all' && (
+          <div className={styles.tagSubFilter}>
+            <span className={styles.subFilterLabel}>Filter by tag:</span>
+            <button
+              className={`${styles.subTagPill} ${!selectedTag ? styles.subTagPillActive : ''}`}
+              onClick={() => setSelectedTag(null)}
+            >
+              All {selectedCategory}
+            </button>
+            {availableTags.slice(0, 10).map(tag => (
+              <button
+                key={tag}
+                className={`${styles.subTagPill} ${selectedTag === tag ? styles.subTagPillActive : ''}`}
+                onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+              >
+                #{tag}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Search Bar */}
         <div className={styles.searchWrapper}>
           <svg className={styles.searchIcon} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8" />
@@ -123,7 +231,7 @@ export default function BlogList({ posts, tags, seriesList }: BlogListProps) {
           </svg>
           <input
             type="text"
-            placeholder="Search posts..."
+            placeholder="Search posts by title, tag, or content..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className={styles.searchInput}
@@ -140,12 +248,22 @@ export default function BlogList({ posts, tags, seriesList }: BlogListProps) {
         </div>
       </section>
 
-      {/* Results count */}
-      <p className={styles.resultCount}>
-        {filtered.length} {filtered.length === 1 ? 'post' : 'posts'}
-        {selectedTag && <> tagged <strong>{selectedTag}</strong></>}
-        {query && <> matching <strong>&ldquo;{query}&rdquo;</strong></>}
-      </p>
+      {/* Results header & Active filters */}
+      <div className={styles.filterMetaRow}>
+        <p className={styles.resultCount}>
+          Showing <strong>{filtered.length}</strong> {filtered.length === 1 ? 'post' : 'posts'}
+          {selectedSeries && <> in series <strong>&ldquo;{selectedSeries}&rdquo;</strong></>}
+          {selectedTag && <> tagged <strong>#{selectedTag}</strong></>}
+          {selectedLang !== 'all' && <> in <strong>{selectedLang === 'vi' ? 'Tiếng Việt' : 'English'}</strong></>}
+          {query && <> matching <strong>&ldquo;{query}&rdquo;</strong></>}
+        </p>
+        
+        {isFilteringActive && (
+          <button onClick={resetFilters} className={styles.resetBtn}>
+            Reset filters ✕
+          </button>
+        )}
+      </div>
 
       {/* Khu 4: Grid 3 cột */}
       {filtered.length > 0 ? (
@@ -156,7 +274,12 @@ export default function BlogList({ posts, tags, seriesList }: BlogListProps) {
         </div>
       ) : (
         <div className={styles.empty}>
-          <p>No posts found. Try a different search or filter.</p>
+          <p className={styles.emptyEmoji}>🔍</p>
+          <p className={styles.emptyTitle}>No matching posts found</p>
+          <p className={styles.emptyText}>Try changing your search terms or resetting filters.</p>
+          <button onClick={resetFilters} className="btn btn-ghost" style={{ marginTop: 'var(--space-4)' }}>
+            Clear all filters
+          </button>
         </div>
       )}
     </div>

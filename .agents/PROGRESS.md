@@ -42,16 +42,18 @@
 - [x] Newsletter Subscription form and dummy API
 - [x] Language Filter in Blog List
 
-### ✅ Phase 5 Done
-- [x] Interactive Chatbot UI component (`Chatbot.tsx`)
-- [x] Lightweight client-side SSE Markdown renderer
-- [x] Drag & resize controls with boundary clamping
-- [x] RAG Route using Fuse.js search query logic (`/api/chat`)
-- [x] Gemini 3.5 Flash Integration
-- [x] Upstash Redis two-tier rate-limiting (10/min, 30/hr)
-- [x] Production Vercel deployment → migrated to project `tuannd` at https://tuannd.vercel.app
-- [x] Replaced default Vercel favicon with dynamic brand logo favicon using Next.js `icon.tsx`
+### ✅ Phase 6 Done (UI/UX & Content Polish)
+- [x] Fixed RSS link at footer (`/feed.xml`) and synced brand logo name
+- [x] Frontmatter metadata upgrade: added `series`, `seriesOrder`, and `featured` across all AI Engineer, LangChain, and AWS articles
+- [x] Interactive Learning Roadmaps on Homepage with topic routing and post count badges
+- [x] Bento Grid Featured Posts and Series Carousel activated on `/blog`
+- [x] Smart Category Tabs & Multi-language Switcher (All / VI / EN) on `/blog`
+- [x] Created `<SeriesBox />` component for step-by-step navigation in multi-part series
+- [x] Collapsible Mobile Table of Contents (Inline TOC) for mobile readers
+- [x] Built full Projects Showcase page (`/projects`) with CSS Modules
+- [x] Built Tutorials & Learning Tracks page (`/tutorials`) with real series progression
+- [x] Built Today I Learned (TIL) micro-journal page (`/til`) with CSS Modules
 
 ### 🎉 All Phases Completed!
-The architecture and implementation plan is fully realized.
+The blog UI, UX, navigation flow, and content architecture have been comprehensively upgraded.
 

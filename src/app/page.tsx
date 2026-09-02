@@ -6,11 +6,12 @@ import styles from './page.module.css';
 const CURRENT_LEARNING = 'AI Agents & LangGraph';
 
 const ROADMAP_TOPICS = [
-  { name: 'AI & ML', emoji: '🤖', color: '#8B5CF6', comingSoon: false },
-  { name: 'AWS Cloud', emoji: '☁️', color: '#F59E0B', comingSoon: true },
-  { name: 'Java', emoji: '☕', color: '#EF4444', comingSoon: true },
-  { name: 'Angular', emoji: '🅰️', color: '#DD0031', comingSoon: true },
-  { name: 'System Design', emoji: '🏗️', color: '#10B981', comingSoon: true },
+  { name: 'AI & ML', emoji: '🤖', color: '#8B5CF6', href: '/tags/ai', count: '11 bài viết', comingSoon: false },
+  { name: 'AWS Cloud', emoji: '☁️', color: '#F59E0B', href: '/tags/aws', count: '2 bài viết', comingSoon: false },
+  { name: 'LangChain & Agents', emoji: '⚡', color: '#3B82F6', href: '/tags/langchain', count: '3 bài viết', comingSoon: false },
+  { name: 'Architecture', emoji: '🏗️', color: '#10B981', href: '/tags/architecture', count: '1 bài viết', comingSoon: false },
+  { name: 'Java & Spring', emoji: '☕', color: '#EF4444', href: '/tags/java', count: null, comingSoon: true },
+  { name: 'Angular', emoji: '🅰️', color: '#DD0031', href: '/tags/angular', count: null, comingSoon: true },
 ];
 
 export default async function HomePage() {
@@ -113,21 +114,44 @@ export default async function HomePage() {
             <span className={styles.sectionEmoji}>🗺️</span>
             Learning Roadmaps
           </h2>
+          <Link href="/tags" className={`${styles.viewAll} link-animated`}>
+            Browse all topics →
+          </Link>
         </div>
         <div className={styles.roadmapGrid}>
-          {ROADMAP_TOPICS.map((topic) => (
-            <div
-              key={topic.name}
-              className={styles.roadmapCard}
-              style={{ '--card-accent': topic.color } as React.CSSProperties}
-            >
-              <span className={styles.roadmapEmoji}>{topic.emoji}</span>
-              <span className={styles.roadmapName}>{topic.name}</span>
-              {topic.comingSoon && (
-                <span className={styles.comingSoon}>Coming Soon</span>
-              )}
-            </div>
-          ))}
+          {ROADMAP_TOPICS.map((topic) => {
+            const cardContent = (
+              <>
+                <span className={styles.roadmapEmoji}>{topic.emoji}</span>
+                <span className={styles.roadmapName}>{topic.name}</span>
+                {topic.count && (
+                  <span className={styles.roadmapCount}>{topic.count}</span>
+                )}
+                {topic.comingSoon && (
+                  <span className={styles.comingSoon}>Coming Soon</span>
+                )}
+              </>
+            );
+
+            return topic.comingSoon ? (
+              <div
+                key={topic.name}
+                className={`${styles.roadmapCard} ${styles.roadmapCardDisabled}`}
+                style={{ '--card-accent': topic.color } as React.CSSProperties}
+              >
+                {cardContent}
+              </div>
+            ) : (
+              <Link
+                key={topic.name}
+                href={topic.href}
+                className={styles.roadmapCard}
+                style={{ '--card-accent': topic.color } as React.CSSProperties}
+              >
+                {cardContent}
+              </Link>
+            );
+          })}
         </div>
       </section>
 

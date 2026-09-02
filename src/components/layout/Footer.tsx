@@ -38,7 +38,7 @@ export default function Footer() {
           <div className={styles.brand}>
             <span className={styles.logo}>
               <span className={styles.logoIcon}>B</span>
-              bravee
+              Bravee<span style={{ color: 'var(--accent)' }}>.</span>
             </span>
             <p className={styles.tagline}>
               Sharing knowledge on the journey from junior to senior developer.
@@ -66,7 +66,7 @@ export default function Footer() {
                   {link.label}
                 </a>
               ))}
-              <a href="/rss.xml" className={styles.footerLink}>RSS Feed</a>
+              <a href="/feed.xml" className={styles.footerLink}>RSS Feed</a>
             </div>
           </div>
         </div>

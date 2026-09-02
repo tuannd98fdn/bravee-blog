@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { MDXRemote } from 'next-mdx-remote/rsc';
 import remarkGfm from 'remark-gfm';
-import { getAllPosts, getPostBySlug, getAdjacentPosts } from '@/lib/mdx';
+import { getAllPosts, getPostBySlug, getAdjacentPosts, getPostsBySeries } from '@/lib/mdx';
 import { mdxComponents } from '@/components/mdx/MDXComponents';
 import BlogPostContent from './BlogPostContent';
 
@@ -50,6 +50,7 @@ export default async function BlogPostPage({ params }: Props) {
   }
 
   const { prev, next } = await getAdjacentPosts(slug);
+  const seriesPosts = post.meta.series ? await getPostsBySeries(post.meta.series) : [];
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -74,6 +75,7 @@ export default async function BlogPostPage({ params }: Props) {
         post={post}
         prevPost={prev}
         nextPost={next}
+        seriesPosts={seriesPosts}
       >
         <MDXRemote
           source={post.content}

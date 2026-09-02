@@ -70,4 +70,12 @@
 - **Alternatives**: Pre-compiled custom `favicon.ico` or static PNG file.
 - **Reason**: Dynamic generation guarantees consistency with the header style variables (gradient colors), stays crisp at all screen resolutions, and aligns with modern Next.js metadata practices.
 
+## Decision #11: Series Navigation Component and Dedicated Hub Pages
+- **Date**: 2026-09-02
+- **Context**: Multi-part articles (AI Engineer, LangChain, AWS) were hard to discover and browse in sequence, and `/projects`, `/tutorials`, `/til` routes were unpopulated placeholders.
+- **Decision**: Added `<SeriesBox />` navigation component to article detail pages, grouped topic categories and bilingual filters on `/blog`, and converted placeholder pages (`/projects`, `/tutorials`, `/til`) into fully designed showcases styled with CSS Modules.
+- **Alternatives**: Leaving placeholder text until future versions or route-based i18n restructuring.
+- **Reason**: Greatly improves content discoverability, sequential learning journey, retention, and delivers a complete, polished website experience.
+
+
 

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import ViewCounter from '@/components/features/ViewCounter';
 import GiscusComments from '@/components/features/GiscusComments';
 import TableOfContents from '@/components/features/TableOfContents';
+import SeriesBox from '@/components/features/SeriesBox';
 import NewsletterForm from '@/components/features/NewsletterForm';
 import { Post, PostMeta } from '@/lib/mdx';
 import styles from './post.module.css';
@@ -13,10 +14,11 @@ interface Props {
   post: Post;
   prevPost: PostMeta | null;
   nextPost: PostMeta | null;
+  seriesPosts?: PostMeta[];
   children: React.ReactNode;
 }
 
-export default function BlogPostContent({ post, prevPost, nextPost, children }: Props) {
+export default function BlogPostContent({ post, prevPost, nextPost, seriesPosts, children }: Props) {
   const [progress, setProgress] = useState(0);
   const articleRef = useRef<HTMLElement>(null);
 
@@ -79,10 +81,31 @@ export default function BlogPostContent({ post, prevPost, nextPost, children }: 
             </div>
           </header>
 
+          {/* Series Box Navigation (Top) */}
+          {post.meta.series && seriesPosts && seriesPosts.length > 1 && (
+            <SeriesBox
+              seriesName={post.meta.series}
+              currentSlug={post.meta.slug}
+              posts={seriesPosts}
+            />
+          )}
+
+          {/* Collapsible Mobile Table of Contents */}
+          <TableOfContents variant="inline" />
+
           {/* Content */}
           <div className={`${styles.content} prose`}>
             {children}
           </div>
+
+          {/* Series Box Navigation (Bottom) */}
+          {post.meta.series && seriesPosts && seriesPosts.length > 1 && (
+            <SeriesBox
+              seriesName={post.meta.series}
+              currentSlug={post.meta.slug}
+              posts={seriesPosts}
+            />
+          )}
 
           {/* Footer Navigation */}
           <footer className={styles.footer}>
@@ -111,7 +134,7 @@ export default function BlogPostContent({ post, prevPost, nextPost, children }: 
         </article>
 
         <aside>
-          <TableOfContents />
+          <TableOfContents variant="sidebar" />
         </aside>
       </div>
     </>

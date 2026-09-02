@@ -9,7 +9,11 @@ interface TOCItem {
   level: number;
 }
 
-export default function TableOfContents() {
+interface TableOfContentsProps {
+  variant?: 'sidebar' | 'inline';
+}
+
+export default function TableOfContents({ variant = 'sidebar' }: TableOfContentsProps) {
   const [headings, setHeadings] = useState<TOCItem[]>([]);
   const [activeId, setActiveId] = useState<string>('');
 
@@ -44,6 +48,43 @@ export default function TableOfContents() {
 
   if (headings.length === 0) return null;
 
+  const scrollToHeading = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      const y = el.getBoundingClientRect().top + window.scrollY - 90;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }
+  };
+
+  if (variant === 'inline') {
+    return (
+      <details className={styles.inlineToc}>
+        <summary className={styles.inlineSummary}>
+          <span className={styles.inlineTitle}>📑 Mục lục bài viết</span>
+          <span className={styles.inlineCount}>{headings.length} mục</span>
+        </summary>
+        <ul className={styles.inlineList}>
+          {headings.map((heading) => (
+            <li
+              key={heading.id}
+              className={`${styles.inlineItem} ${heading.level === 3 ? styles.indent : ''}`}
+            >
+              <a
+                href={`#${heading.id}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  scrollToHeading(heading.id);
+                }}
+              >
+                {heading.text}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </details>
+    );
+  }
+
   return (
     <nav className={styles.toc}>
       <h3 className={styles.title}>On this page</h3>
@@ -59,12 +100,7 @@ export default function TableOfContents() {
               href={`#${heading.id}`}
               onClick={(e) => {
                 e.preventDefault();
-                // We add an offset for the sticky header
-                const el = document.getElementById(heading.id);
-                if (el) {
-                  const y = el.getBoundingClientRect().top + window.scrollY - 100;
-                  window.scrollTo({ top: y, behavior: 'smooth' });
-                }
+                scrollToHeading(heading.id);
               }}
             >
               {heading.text}
