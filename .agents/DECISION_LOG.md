@@ -77,5 +77,13 @@
 - **Alternatives**: Leaving placeholder text until future versions or route-based i18n restructuring.
 - **Reason**: Greatly improves content discoverability, sequential learning journey, retention, and delivers a complete, polished website experience.
 
+## Decision #12: Dedicated System Design content track & DDD architectural foundation
+- **Date**: 2026-09-03
+- **Context**: Expand the blog's technical depth into core enterprise software engineering, specifically Domain-Driven Design (DDD) as requested, mapping video chapters into an exhaustive, high-signal guide.
+- **Decision**: Created `content/blog/vi/system-design/` directory and published "Domain-Driven Design (DDD): Tất Tần Tật Những Gì Bạn Cần Biết Trong Kỷ Nguyên System Design", synthesizing Strategic Design (Core/Supporting/Generic Subdomains, Ubiquitous Language, Bounded Contexts, Context Mapping, ACL) and Tactical Design (Entities, Value Objects, Aggregates & Invariants, Repositories, Domain Services, Hexagonal Architecture) with concrete industry case studies (Netflix, Real Estate vs. E-commerce).
+- **Alternatives**: Publishing as a generic overview without tactical code examples or keeping it under general category.
+- **Reason**: Enhances the blog's positioning as an elite senior engineering resource; provides immediate practical utility for backend and microservices architects.
+
+
 
 

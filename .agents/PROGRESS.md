@@ -54,8 +54,10 @@
 - [x] Built Tutorials & Learning Tracks page (`/tutorials`) with real series progression
 - [x] Built Today I Learned (TIL) micro-journal page (`/til`) with CSS Modules
 - [x] Published deep dive: "GitHub Spec Kit — Khi 'Spec' Trở Thành Mã Nguồn Thực Thi Của Kỷ Nguyên AI Agent" (`/blog/github-spec-kit-spec-driven-development`)
+- [x] Published System Design deep dive: "Domain-Driven Design (DDD): Tất Tần Tật Những Gì Bạn Cần Biết Trong Kỷ Nguyên System Design" (`/blog/domain-driven-design-what-you-need-to-know`)
 
 ### 🎉 All Phases Completed!
 The blog UI, UX, navigation flow, and content architecture have been comprehensively upgraded.
+
 
 
