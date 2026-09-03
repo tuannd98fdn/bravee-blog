@@ -1,0 +1,180 @@
+---
+title: "Từ Docker Đến Kubernetes & GitOps: System Design Cho CI/CD Pipeline (VIP Pro)"
+date: "2026-09-03"
+description: "Hướng dẫn chuyên sâu dành cho Middle/Senior DevOps. Khám phá Multi-stage build, Distroless images, kiến trúc Kubernetes nâng cao (StatefulSet, PDB, QoS), chiến lược Zero-Downtime Deployment và GitOps với ArgoCD."
+tags: ["DevOps", "Docker", "Kubernetes", "CI/CD", "GitOps", "System Design"]
+category: "tutorial"
+lang: "vi"
+featured: true
+---
+
+Hầu hết lập trình viên đều có thể gõ `docker-compose up` trên máy cá nhân hoặc viết một file GitHub Actions đơn giản để đẩy code lên server. Nhưng ở quy mô Production — nơi phải hứng chịu hàng triệu lượt truy cập, yêu cầu **Zero-Downtime** (không thời gian chết) và **High Availability** (tính sẵn sàng cao) — những kiến thức nhập môn đó hoàn toàn chưa đủ.
+
+Trong bài viết mang tính chất "VIP Pro" này, chúng ta sẽ bỏ qua những khái niệm vỡ lòng như "Container là gì" hay "Pod là gì". Thay vào đó, chúng ta sẽ đi sâu vào **tư duy thiết kế hệ thống (System Design)** của một Senior DevOps/SRE thực thụ: từ tối ưu hóa cực hạn Docker, thiết kế Workload bền vững trên Kubernetes, cho đến việc xây dựng luồng CI/CD hiện đại theo triết lý **GitOps**.
+
+---
+
+## 🐋 1. Tối Ưu Hóa Cực Hạn Docker (Advanced Docker)
+
+Với một Senior Engineer, Dockerfile không chỉ là kịch bản đóng gói code, mà là **nút thắt cổ chai về bảo mật và hiệu năng**.
+
+### A. Multi-stage Builds & Distroless Images
+
+Nếu Image của bạn nặng 1.5GB cho một ứng dụng Node.js hoặc Golang, bạn đang lãng phí băng thông mạng, làm chậm quá trình scale-up của Kubernetes, và quan trọng nhất: **mở rộng bề mặt tấn công (Attack Surface)**.
+
+Hãy sử dụng **Multi-stage builds** kết hợp với **Distroless Images** (do Google phát triển). Distroless là những image siêu nhẹ, không chứa shell (`sh`, `bash`), không chứa package manager (`apt`, `apk`), chỉ chứa exectuable file của bạn và runtime tối thiểu.
+
+```dockerfile
+# Stage 1: Build (Chứa toàn bộ source code, compiler, SDK)
+FROM golang:1.21-alpine AS builder
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+# Compile binary statically (bắt buộc cho distroless)
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./main.go
+
+# Stage 2: Production (Chỉ chứa Binary, không có Shell)
+FROM gcr.io/distroless/static-debian11
+WORKDIR /app
+COPY --from=builder /app/server /app/server
+USER nonroot:nonroot
+EXPOSE 8080
+CMD ["/app/server"]
+```
+
+**Lợi ích:**
+- **Bảo mật tuyệt đối**: Hacker nếu có chiếm quyền RCE (Remote Code Execution) cũng không thể chạy `curl` tải script độc hại hay mở reverse shell vì... không có `sh`.
+- **Kích thước siêu nhỏ**: Image cuối cùng có thể chỉ từ 10MB - 50MB.
+
+### B. Rootless Mode & Non-root Users
+
+Mặc định, process trong container chạy dưới quyền `root`. Nếu hacker thoát ra được (Container Breakout), họ sẽ có quyền root trên chính máy host. Trong Kubernetes, Pod Security Standards (PSS) mức Restricted sẽ cấm ngặt các container chạy dưới quyền root.
+
+Hãy luôn set `USER nonroot:nonroot` trong Dockerfile (như ví dụ trên) hoặc khai báo `securityContext` trong Kubernetes Pod.
+
+---
+
+## ☸️ 2. Kubernetes: Kiến Trúc & Quản Lý Workload
+
+Kubernetes (K8s) không phải là công cụ chạy container. K8s là một **Hệ điều hành cho Datacenter**, tự động hóa việc cấp phát tài nguyên và tự phục hồi (Self-healing).
+
+### A. Deployment vs StatefulSet
+
+- **Deployment**: Dành cho **Stateless** apps (API, Frontend). Mọi Pod đều giống hệt nhau. K8s có thể kill Pod A và bật Pod B ở bất kỳ node nào mà không sợ mất dữ liệu. Các Pod được định tuyến qua chung một Service IP.
+- **StatefulSet**: Dành cho **Stateful** apps (Database, Message Queue, Caching). Các Pod có danh tính cố định (ví dụ: `redis-0`, `redis-1`). Khi scale, K8s tạo theo thứ tự nghiêm ngặt.
+  
+<Callout type="warning" title="Headless Service">
+**Headless Service**: Khi chạy StatefulSet, thay vì dùng Service tạo ra Load Balancer lặp (Round-robin) như thông thường, ta thường tạo Headless Service (`clusterIP: None`). Điều này cho phép DNS nội bộ của K8s trả về trực tiếp danh sách mảng IP của từng Pod, giúp ứng dụng (như MongoDB driver hoặc Kafka client) tự khám phá các node trong cluster để thực hiện Read/Write splitting hiệu quả.
+</Callout>
+
+### B. Probes: Liveness, Readiness, Startup
+
+Đừng bao giờ deploy một ứng dụng K8s mà không có Health Checks.
+
+1. **Liveness Probe**: Hỏi: *"App của bạn có bị deadlock/treo không?"* Nếu fail, Kubelet sẽ **kill và restart** Pod. (Đừng check kết nối DB ở Liveness, nếu DB chết, bạn không muốn K8s restart toàn bộ Pod API liên tục).
+2. **Readiness Probe**: Hỏi: *"App của bạn đã sẵn sàng nhận traffic chưa?"* Nếu fail, Pod vẫn sống, nhưng K8s sẽ **ngắt Pod đó ra khỏi Load Balancer** (Endpoints). Dùng Readiness để check kết nối DB, Redis.
+3. **Startup Probe**: Dành riêng cho các legacy app khởi động rất chậm (Java Spring Boot mất 1-2 phút). Nó sẽ chặn Liveness/Readiness cho đến khi app khởi động xong hẳn, tránh bị K8s kill nhầm lúc đang khởi động.
+
+### C. Resource QoS & Pod Disruption Budgets (PDB)
+
+Khi Node bị hết CPU/RAM (Node Pressure), Kubelet bắt đầu "giết" các Pod (Eviction) theo thuật toán **QoS (Quality of Service)**:
+- **Guaranteed**: Sống dai nhất. Điều kiện: `requests` và `limits` của CPU, RAM phải được set và bằng nhau.
+- **Burstable**: Dễ chết nhì. Điều kiện: có set `requests` nhưng `limits` cao hơn hoặc không set `limits`.
+- **BestEffort**: Chết đầu tiên. Điều kiện: Không set resource nào.
+
+<Callout type="tip" title="Pod Disruption Budget (PDB)">
+Khi DevOps thực hiện bảo trì, update (drain node), K8s sẽ phải dời Pod sang Node khác. PDB đảm bảo rằng ứng dụng của bạn không bao giờ bị sập toàn bộ. Ví dụ: Set `minAvailable: 2` đảm bảo K8s luôn giữ ít nhất 2 Pod của service này sống khỏe khi tiến hành bảo trì hạ tầng.
+</Callout>
+
+---
+
+## 🚀 3. CI/CD Thực Chiến: Kỷ Nguyên Của GitOps (ArgoCD)
+
+Mô hình Push CI/CD truyền thống (như dùng Jenkins ssh thẳng vào server hoặc chạy `kubectl apply`) có một điểm yếu chí mạng: Server CI của bạn phải nắm giữ thông tin xác thực (Kubeconfig/AWS Credentials) của môi trường Production. Nếu Jenkins bị hack, hacker có toàn quyền phá hủy Cluster.
+
+### Chào mừng đến với GitOps (Mô hình Pull)
+
+Trong GitOps, Git Repository (chứa K8s YAML manifests) là **Nguồn Sự Thật Duy Nhất (Single Source of Truth)**. 
+Ta cài đặt một agent (ví dụ **ArgoCD** hoặc **FluxCD**) chạy *bên trong* Kubernetes Cluster. Agent này liên tục "kéo" (Pull) cấu hình từ Git về và so sánh với trạng thái thực tế của cluster. Nếu có sai lệch (Drift), nó tự động đồng bộ (Sync).
+
+```text
+┌────────────────┐        ┌────────────────┐        ┌────────────────────────────┐
+│                │        │                │        │     KUBERNETES CLUSTER     │
+│   Source Code  │──Push─>│ GitHub Actions │        │ ┌────────────────────────┐ │
+│  (App Repo)    │        │ (CI Pipeline)  │        │ │        ArgoCD          │ │
+│                │        │                │        │ │ (Chạy pull mỗi 3 phút) │ │
+└────────────────┘        └──────┬─────────┘        │ └──────────┬─────────────┘ │
+                                 │                  │            │               │
+                                 ▼                  │            ▼               │
+                          [Push Image lên]          │   [Sync Manifest vào K8s]  │
+                          [Docker Registry]         │            │               │
+                                 │                  │            ▼               │
+┌────────────────┐        ┌──────┴─────────┐        │ ┌────────────────────────┐ │
+│                │        │                │        │ │    Nginx Deployment    │ │
+│  K8s Manifests │<─Push──│ GitHub Actions │<──Pull─│ │  (image: api:v1.2.3)   │ │
+│  (Config Repo) │        │(Cập nhật tag)  │        │ └────────────────────────┘ │
+└────────────────┘        └────────────────┘        └────────────────────────────┘
+```
+
+### Luồng Hoạt Động (The Pipeline)
+
+1. **Continuous Integration (GitHub Actions):**
+   - Dev push code lên branch `main`.
+   - Chạy Unit Test, Linter, SonarQube (SAST).
+   - Build Image bằng Docker Buildx.
+   - Chạy **Trivy** scan Image để tìm lỗ hổng CVE. Nếu có lỗi CRITICAL -> fail pipeline ngay lập tức.
+   - Push Image lên Registry (ECR, GCR, DockerHub) với tag là commit SHA (ví dụ: `v1.0.0-abc1234`).
+   - Clone **Config Repo** (Repo chứa YAML), dùng Kustomize hoặc `sed` để sửa image tag thành `abc1234`, sau đó commit và push ngược lên Config Repo.
+
+2. **Continuous Deployment (ArgoCD):**
+   - ArgoCD phát hiện Config Repo có commit mới.
+   - Nó báo hiệu trạng thái **OutOfSync**.
+   - Nó tự động (hoặc chờ manual approve) apply manifest mới nhất vào Cluster K8s.
+   - Giả sử có ai đó tự tay chạy `kubectl edit` trong Cluster để sửa config, ArgoCD sẽ phát hiện sự sai lệch này và lập tức apply lại bản chuẩn từ Git (Self-healing).
+
+---
+
+## ⚖️ 4. Chiến Lược Zero-Downtime Deployment
+
+Việc deploy một phiên bản mới lên K8s không hề đơn giản. Chúng ta cần những chiến lược để khách hàng không nhận ra hệ thống đang cập nhật.
+
+### A. Rolling Updates (Chiến lược mặc định của K8s)
+
+K8s sẽ từ từ tạo Pod phiên bản V2, đợi Pod V2 `Ready` (vượt qua Readiness Probe), rồi mới bắt đầu xóa dần Pod V1.
+- **Ưu điểm**: Đơn giản, mặc định.
+- **Nhược điểm**: Khó rollback ngay lập tức nếu V2 có lỗi ngầm (không crash nhưng trả về logic sai), do lúc này V1 đã bị xóa mất.
+
+### B. Blue/Green Deployments
+
+Khởi chạy **song song 100%** cả cụm V1 (Blue) và cụm V2 (Green). Sau khi test nội bộ thấy V2 chạy ngon lành, ta đổi routing của Service từ V1 sang V2 chỉ trong một cú click (Switch Traffic).
+- **Ưu điểm**: Chuyển đổi siêu tốc (tích tắc), rollback cũng chỉ cần chuyển traffic ngược lại V1 (vì V1 vẫn đang chạy).
+- **Nhược điểm**: Hao tốn gấp đôi tài nguyên hạ tầng (RAM, CPU) trong quá trình deploy.
+
+### C. Canary Releases
+
+Chỉ đẩy 5% hoặc 10% lượng truy cập của người dùng sang phiên bản V2. Theo dõi các chỉ số Metrics (thông qua Prometheus/Grafana). Nếu error rate thấp và latency ổn định, hệ thống tự động tăng dần traffic lên 20%, 50% rồi 100%.
+- Thường được quản lý xuất sắc bởi các công cụ nâng cao như **Argo Rollouts** hoặc **Istio Service Mesh**.
+- **Ưu điểm**: An toàn tuyệt đối, kiểm tra được hiệu năng thực tế trên Production với một lượng rủi ro được khoanh vùng tối đa.
+- **Nhược điểm**: Đòi hỏi hệ thống đo lường (Observability) cực kỳ tốt và thiết lập ingress/gateway phức tạp.
+
+---
+
+## 🎯 Tổng Kết
+
+Thiết kế một hệ thống CI/CD và kiến trúc hạ tầng cho Production chưa bao giờ là việc đơn giản. Nó đòi hỏi tư duy phòng thủ (Defensive Design) ở mọi cấp độ:
+- **Tầng Build**: Tối ưu Image bằng Multi-stage và Distroless để bóp nghẹt Attack Surface, đảm bảo tốc độ và bảo mật.
+- **Tầng Orchestration**: Giữ cho K8s ổn định bằng Health Probes, QoS limits, và PDBs.
+- **Tầng Deployment**: Áp dụng triết lý GitOps với ArgoCD để loại bỏ rủi ro bảo mật từ CI và tạo sự đồng nhất tuyệt đối giữa Code (Git) và Cơ sở hạ tầng (Infra).
+
+Khi làm chủ được hệ sinh thái này, bạn không chỉ là một người "biết dùng Docker", mà bạn thực sự là một **Kiến trúc sư hệ thống (System Architect)** sẵn sàng vận hành những nền tảng bền vững nhất. 
+
+> *"In Git We Trust, In CI/CD We Automate."*
+
+---
+
+### 📚 Tài Liệu Tham Khảo Nâng Cao
+- **GitOps Principles**: [OpenGitOps](https://opengitops.dev/)
+- **Docker Best Practices**: [GoogleCloudPlatform/distroless](https://github.com/GoogleContainerTools/distroless)
+- **Kubernetes Production Patterns**: [Kubernetes Documentation - PDB](https://kubernetes.io/docs/concepts/workloads/pods/disruptions/)
+- **ArgoCD Architecture**: [ArgoCD Documentation](https://argo-cd.readthedocs.io/en/stable/)
