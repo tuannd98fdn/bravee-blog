@@ -53,7 +53,9 @@
 - [x] Built full Projects Showcase page (`/projects`) with CSS Modules
 - [x] Built Tutorials & Learning Tracks page (`/tutorials`) with real series progression
 - [x] Built Today I Learned (TIL) micro-journal page (`/til`) with CSS Modules
+- [x] Published deep dive: "GitHub Spec Kit — Khi 'Spec' Trở Thành Mã Nguồn Thực Thi Của Kỷ Nguyên AI Agent" (`/blog/github-spec-kit-spec-driven-development`)
 
 ### 🎉 All Phases Completed!
 The blog UI, UX, navigation flow, and content architecture have been comprehensively upgraded.
+
 
