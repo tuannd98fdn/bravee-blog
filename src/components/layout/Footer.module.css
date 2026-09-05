@@ -37,7 +37,7 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  background: var(--accent-gradient);
+  background: transparent;
   color: white;
   border-radius: var(--radius-sm);
   font-size: var(--text-xs);

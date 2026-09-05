@@ -1,3 +1,4 @@
+import Logo from '../ui/Logo';
 import styles from './Footer.module.css';
 
 const SOCIAL_LINKS = [
@@ -37,7 +38,7 @@ export default function Footer() {
         <div className={styles.top}>
           <div className={styles.brand}>
             <span className={styles.logo}>
-              <span className={styles.logoIcon}>B</span>
+              <Logo width={28} height={28} className={styles.logoIcon} />
               Bravee<span style={{ color: 'var(--accent)' }}>.</span>
             </span>
             <p className={styles.tagline}>

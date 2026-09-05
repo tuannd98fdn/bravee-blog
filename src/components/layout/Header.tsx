@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ThemeToggle from './ThemeToggle';
 import SearchDialog from '../ui/SearchDialog';
+import Logo from '../ui/Logo';
 import styles from './Header.module.css';
 
 const NAV_ITEMS = [
@@ -47,7 +48,7 @@ export default function Header() {
       <div className={styles.inner}>
         {/* Logo */}
         <Link href="/" className={styles.logo} onClick={() => setMobileOpen(false)}>
-          <span className={styles.logoIcon}>B</span>
+          <Logo width={32} height={32} className={styles.logoIcon} />
           <span className={styles.logoText}>
             Bravee<span className={styles.logoDot}>.</span>
           </span>
