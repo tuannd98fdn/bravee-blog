@@ -14,19 +14,34 @@ export default function Icon() {
       // ImageResponse JSX element
       <div
         style={{
-          fontSize: 20,
-          background: 'linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%)',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
           width: '100%',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'white',
           borderRadius: 8,
-          fontWeight: 800,
         }}
       >
-        B
+        <svg viewBox="0 0 100 100" width="75%" height="75%" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Main spine of the B */}
+          <path d="M 25 15 L 25 85" stroke="#3b82f6" strokeWidth="8" strokeLinecap="round" />
+          
+          {/* Top loop */}
+          <path d="M 25 15 L 55 15 C 75 15 75 45 55 45 L 25 45" stroke="#06b6d4" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+          
+          {/* Bottom loop */}
+          <path d="M 25 45 L 60 45 C 85 45 85 85 60 85 L 25 85" stroke="#8b5cf6" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+          
+          {/* Cyberpunk/Network Nodes */}
+          <circle cx="25" cy="15" r="8" fill="#3b82f6" />
+          <circle cx="25" cy="85" r="8" fill="#3b82f6" />
+          <circle cx="55" cy="15" r="6" fill="#06b6d4" />
+          <circle cx="70" cy="30" r="6" fill="#06b6d4" />
+          <circle cx="75" cy="65" r="6" fill="#8b5cf6" />
+          <circle cx="60" cy="85" r="6" fill="#8b5cf6" />
+          <circle cx="25" cy="45" r="6" fill="#ffffff" />
+        </svg>
       </div>
     ),
     // ImageResponse options
