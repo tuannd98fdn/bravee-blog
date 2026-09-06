@@ -67,11 +67,13 @@
 .greetingText {
   font-size: var(--text-xl);
   color: var(--text-secondary);
-  font-weight: 400;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .name {
-  font-size: clamp(3rem, 6vw, 4.5rem);
+  font-size: clamp(3.5rem, 8vw, 5.5rem);
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.1;
@@ -79,22 +81,22 @@
   /* Shiny Text Effect */
   background: linear-gradient(
     to right,
-    #3B82F6 20%,
-    #8B5CF6 30%,
-    #D8B4FE 40%,
-    #8B5CF6 50%,
-    #3B82F6 80%
+    var(--primary) 20%,
+    var(--accent) 40%,
+    #D8B4FE 60%,
+    var(--accent) 80%,
+    var(--primary) 100%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   
-  animation: shine 5s linear infinite;
+  animation: shine 6s linear infinite;
   margin-bottom: var(--space-6);
   
   /* Subtle text drop shadow for depth */
-  filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.2));
+  filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.3));
 }
 
 @keyframes shine {
@@ -107,35 +109,63 @@
   font-size: var(--text-lg);
   color: var(--text-secondary);
   line-height: var(--leading-relaxed);
-  margin-bottom: var(--space-6);
-  max-width: 480px;
+  margin-bottom: var(--space-8);
+  max-width: 520px;
 }
 
 .bio strong {
   color: var(--text-primary);
   font-weight: 600;
+  position: relative;
+}
+
+.bio strong::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.bio strong:hover::after {
+  opacity: 1;
 }
 
 .status {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  padding: var(--space-2) var(--space-4);
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-5);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-full);
   font-size: var(--text-sm);
   margin-bottom: var(--space-8);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
   transition: all var(--transition-base);
+  position: relative;
+  overflow: hidden;
+}
+
+.status::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
+  pointer-events: none;
 }
 
 .status:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.15);
-  transform: translateY(-1px);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
 }
 
 .statusDot {
