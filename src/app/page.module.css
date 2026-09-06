@@ -81,11 +81,11 @@
   /* Shiny Text Effect */
   background: linear-gradient(
     to right,
-    var(--primary) 20%,
-    var(--accent) 40%,
+    #3B82F6 20%,
+    #8B5CF6 40%,
     #D8B4FE 60%,
-    var(--accent) 80%,
-    var(--primary) 100%
+    #8B5CF6 80%,
+    #3B82F6 100%
   );
   background-size: 200% auto;
   -webkit-background-clip: text;
@@ -140,7 +140,7 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-2) var(--space-5);
-  background: var(--bg-secondary);
+  background: var(--bg-primary);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-full);
   font-size: var(--text-sm);
