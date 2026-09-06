@@ -2,19 +2,31 @@ import React from 'react';
 import Link from 'next/link';
 import Callout from './Callout';
 import CopyButton from './CopyButton';
+import Mermaid from './Mermaid';
 import styles from '@/app/blog/[slug]/post.module.css';
 
 export const mdxComponents = {
   Callout,
+  Mermaid,
   h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => <h1 id={slugify(props.children)} {...props} />,
   h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => <h2 id={slugify(props.children)} {...props} />,
   h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => <h3 id={slugify(props.children)} {...props} />,
-  pre: ({ children, ...props }: React.HTMLAttributes<HTMLPreElement>) => (
-    <div className={styles.codeBlock}>
-      <pre {...props}>{children}</pre>
-      <CopyButton content={extractText(children)} />
-    </div>
-  ),
+  pre: ({ children, ...props }: React.HTMLAttributes<HTMLPreElement>) => {
+    // Detect mermaid code blocks and render with Mermaid component
+    if (React.isValidElement(children)) {
+      const childProps = children.props as { className?: string; children?: React.ReactNode };
+      if (childProps.className === 'language-mermaid') {
+        const chart = extractText(childProps.children);
+        return <Mermaid chart={chart} />;
+      }
+    }
+    return (
+      <div className={styles.codeBlock}>
+        <pre {...props}>{children}</pre>
+        <CopyButton content={extractText(children)} />
+      </div>
+    );
+  },
   a: ({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) => {
     if (href?.startsWith('http')) {
       return (
