@@ -38,6 +38,20 @@ const TRACKS: TutorialTrack[] = [
     description: 'Hệ thống hóa kiến trúc đám mây nâng cao: Tổng quan cấu trúc đề thi SAP-C02, hiểu sâu về Identity & Access Management (IAM), STS, và bảo mật Cloud Enterprise.',
     level: 'Professional',
   },
+  {
+    title: 'Microservices & DevOps: Đưa Ứng Dụng Lên Cloud',
+    seriesName: 'DevOps Thực Chiến',
+    emoji: '🐳',
+    description: 'Nắm vững kỹ năng Cloud-Native: Docker hóa ứng dụng, xây dựng CI/CD Pipeline (GitHub Actions), triển khai lên Kubernetes (K8s) và thiết lập Monitoring.',
+    level: 'Intermediate to Advanced',
+  },
+  {
+    title: 'Backend Mastery: Golang & Event-Driven Architecture',
+    seriesName: 'Golang Microservices',
+    emoji: '🐹',
+    description: 'Khóa học thực chiến xây dựng hệ thống phân tán hiệu năng cao với Golang: RESTful API (Gin/Fiber), gRPC, tích hợp Kafka và Redis Caching.',
+    level: 'Advanced',
+  },
 ];
 
 export default async function TutorialsPage() {
