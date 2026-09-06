@@ -39,7 +39,6 @@ export default function Footer() {
           <div className={styles.brand}>
             <span className={styles.logo}>
               <Logo width={28} height={28} className={styles.logoIcon} />
-              Bravee<span style={{ color: 'var(--accent)' }}>.</span>
             </span>
             <p className={styles.tagline}>
               Sharing knowledge on the journey from junior to senior developer.
