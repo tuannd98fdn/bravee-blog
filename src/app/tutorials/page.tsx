@@ -25,6 +25,13 @@ const TRACKS: TutorialTrack[] = [
     level: 'Beginner to Advanced',
   },
   {
+    title: 'Kỹ Nghệ AI Agents (Từ Giáo Trình Stanford CS329Z)',
+    seriesName: 'Kỹ Nghệ AI Agents',
+    emoji: '🧠',
+    description: 'Chuyển thể từ môn CS329Z của Đại học Stanford (Fall 2026). Lộ trình 8 phần chuyên sâu về Compound AI Systems, MCP, Multi-Agent Frameworks (DSPy), Data Flywheels và LLM-as-a-Judge.',
+    level: 'Advanced',
+  },
+  {
     title: 'LangChain & LangGraph Thực Chiến',
     seriesName: 'LangChain Thực Chiến',
     emoji: '⚡',
