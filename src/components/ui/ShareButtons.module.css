@@ -1,0 +1,65 @@
+.shareContainer {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 2rem 0;
+  padding-top: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.shareLabel {
+  font-weight: 500;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.shareBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.shareBtn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.copied {
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.copyTooltip {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--success);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translate(-50%, 5px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
