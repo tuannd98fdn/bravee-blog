@@ -1,10 +1,8 @@
 import { MetadataRoute } from 'next';
 import { getAllPosts } from '@/lib/mdx';
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL 
-    || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null)
-    || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-    || 'http://localhost:3000';
+  // Use explicit domain because Vercel env vars might point to an internal alias like tuannd-five.vercel.app
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tuannd.vercel.app';
   const posts = await getAllPosts();
   
   const postUrls = posts.map((post) => ({

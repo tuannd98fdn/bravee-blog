@@ -18,12 +18,7 @@ export const metadata: Metadata = {
   keywords: ['tech blog', 'programming', 'AI', 'AWS', 'Java', 'Angular', 'web development', 'software engineering'],
   authors: [{ name: 'Bravee' }],
   creator: 'Bravee',
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL 
-      || (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : null)
-      || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
-      || 'http://localhost:3000'
-  ),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://tuannd.vercel.app'),
   openGraph: {
     type: 'website',
     locale: 'en_US',
