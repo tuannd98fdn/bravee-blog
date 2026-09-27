@@ -1,8 +1,8 @@
 ---
 title: "Tutorial RAG: Tự Xây Trợ Lý Hỏi Đáp Tài Liệu Với Python Và Supabase"
 date: "2026-09-27"
-description: "Từ chunking đến vector search, cùng xây một trợ lý hỏi đáp tài liệu chạy được bằng Python, OpenAI Embeddings và Supabase pgvector, có trích dẫn nguồn và biết từ chối khi thiếu căn cứ."
-tags: ["RAG", "Python", "Supabase", "pgvector", "AI", "Tutorial"]
+description: "Từ chunking đến vector search, cùng xây trợ lý hỏi đáp tài liệu bằng Python, Ollama chạy model local và Supabase pgvector, có trích dẫn nguồn và biết từ chối khi thiếu căn cứ."
+tags: ["RAG", "Python", "Ollama", "Supabase", "pgvector", "AI", "Tutorial"]
 category: "tutorial"
 lang: "vi"
 ---
@@ -16,12 +16,12 @@ Trong tutorial này, ta sẽ dựng **trợ lý hỏi đáp trên một thư m�
 ## Thành phẩm
 
 - Nạp các file `.md` và `.txt` từ thư mục `data/`.
-- Lưu nội dung, nguồn và vector 1536 chiều vào Supabase `pgvector`.
+- Lưu nội dung, nguồn và vector 768 chiều vào Supabase `pgvector`.
 - Tìm 5 đoạn gần câu hỏi nhất rồi chuyển chúng làm ngữ cảnh cho mô hình.
 - In câu trả lời cùng tên file và số đoạn để người dùng đối chiếu.
 - Từ chối trả lời khi kết quả tìm kiếm không đủ liên quan.
 
-Ta dùng OpenAI cho embedding và sinh câu trả lời, Supabase làm vector store. Dữ liệu rời khỏi máy để gọi hai dịch vụ này, vì vậy đừng thử với tài liệu nhạy cảm nếu chưa được phép.
+Ta dùng **Ollama** để chạy model chat và embedding ngay trên máy, không cần OpenAI API key hay trả phí theo token. Supabase vẫn là vector store trên cloud, nên nội dung chunks và embeddings được gửi tới Supabase. Nếu dữ liệu không được rời máy, cần thay Supabase bằng vector store local nữa.
 
 ## RAG hoạt động ra sao?
 
@@ -50,30 +50,36 @@ flowchart LR
 
 ## Chuẩn bị dự án
 
-Bạn cần Python 3.10 trở lên, một project Supabase và một OpenAI API key. Tạo thư mục dự án rồi cài các gói cần thiết:
+Bạn cần Python 3.10 trở lên, cài ứng dụng [Ollama](https://ollama.com/download), và một project Supabase. Tạo thư mục dự án rồi cài các gói Python:
 
 ```bash
 mkdir rag-docs
 cd rag-docs
 python3 -m venv .venv
 source .venv/bin/activate
-pip install openai supabase python-dotenv
+pip install ollama supabase python-dotenv
 mkdir -p data
 ```
 
 Trên Windows PowerShell, kích hoạt môi trường bằng `.venv\\Scripts\\Activate.ps1`.
 
-Tạo file `.env` ở thư mục gốc:
+Mở Ollama, sau đó tải một model chat nhỏ và một model embedding:
+
+```bash
+ollama pull llama3.2:3b
+ollama pull nomic-embed-text
+```
+
+Model được tải về và chạy trên máy; lần đầu sẽ cần Internet để tải model. Tốc độ phụ thuộc RAM và phần cứng. Tạo file `.env` ở thư mục gốc, lần này không cần khóa OpenAI:
 
 ```dotenv
-OPENAI_API_KEY=your-openai-api-key
-OPENAI_CHAT_MODEL=gpt-4.1-mini
-OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+OLLAMA_CHAT_MODEL=llama3.2:3b
+OLLAMA_EMBEDDING_MODEL=nomic-embed-text
 SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=your-server-side-key
 ```
 
-Lấy URL và khóa server-side trong phần API settings của Supabase. Khóa này có quyền cao: chỉ dùng trong môi trường server/local tin cậy, không commit `.env`, không đưa khóa vào frontend hay repository công khai. Thêm một tài liệu mẫu vào `data/handbook.md`:
+Lấy URL và khóa server-side trong phần API settings của Supabase. Đây **không phải API key cho model**, nhưng vẫn là thông tin đăng nhập có quyền cao: không commit `.env`, không đưa khóa vào frontend hay repository công khai. Supabase có thể có gói miễn phí với hạn mức thay đổi theo thời điểm; nếu không muốn dùng dịch vụ cloud, cần thay vector store bằng lựa chọn local như Chroma hoặc PostgreSQL `pgvector` tự chạy. Thêm một tài liệu mẫu vào `data/handbook.md`:
 
 ```markdown
 # Chính sách nghỉ phép
@@ -94,12 +100,12 @@ create table if not exists public.documents (
   source text not null,
   chunk_index integer not null,
   content text not null,
-  embedding vector(1536) not null,
+    embedding vector(768) not null,
   unique (source, chunk_index)
 );
 
 create or replace function public.match_documents(
-  query_embedding vector(1536),
+    query_embedding vector(768),
   match_threshold float,
   match_count int
 )
@@ -125,7 +131,7 @@ as $$
 $$;
 ```
 
-`text-embedding-3-small` trả về 1536 chiều theo cấu hình mặc định, nên kiểu `vector(1536)` phải khớp với nó. Toán tử `<=>` tính cosine distance; hàm đổi khoảng cách thành similarity để có thể lọc theo ngưỡng. Nếu đổi embedding model hoặc số chiều, cần cập nhật đồng bộ cấu trúc bảng và cách lập chỉ mục.
+`nomic-embed-text` trả về vector 768 chiều, nên kiểu `vector(768)` phải khớp với nó. Toán tử `<=>` tính cosine distance; hàm đổi khoảng cách thành similarity để có thể lọc theo ngưỡng. Nếu đổi embedding model hoặc số chiều, cần cập nhật đồng bộ cấu trúc bảng và cách lập chỉ mục.
 
 <Callout type="warning" title="Khóa Supabase không dành cho trình duyệt">
   Ví dụ này gọi Supabase từ script Python bằng khóa server-side. Không đặt khóa
@@ -142,7 +148,7 @@ import os
 from pathlib import Path
 
 from dotenv import load_dotenv
-from openai import OpenAI
+from ollama import embed
 from supabase import create_client
 
 load_dotenv()
@@ -152,8 +158,8 @@ CHUNK_SIZE = 1200
 CHUNK_OVERLAP = 200
 EMBED_BATCH_SIZE = 64
 UPSERT_BATCH_SIZE = 100
+EMBEDDING_MODEL = os.environ.get("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text")
 
-openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 supabase = create_client(
     os.environ["SUPABASE_URL"],
     os.environ["SUPABASE_SERVICE_ROLE_KEY"],
@@ -184,15 +190,11 @@ def split_text(text: str) -> list[str]:
 
 def embed_chunks(chunks: list[str]) -> list[list[float]]:
     embeddings = []
-    model = os.environ.get(
-        "OPENAI_EMBEDDING_MODEL", "text-embedding-3-small"
-    )
 
     for start in range(0, len(chunks), EMBED_BATCH_SIZE):
         batch = chunks[start : start + EMBED_BATCH_SIZE]
-        response = openai_client.embeddings.create(model=model, input=batch)
-        ordered = sorted(response.data, key=lambda item: item.index)
-        embeddings.extend(item.embedding for item in ordered)
+        response = embed(model=EMBEDDING_MODEL, input=batch)
+        embeddings.extend(response.embeddings)
 
     return embeddings
 
@@ -262,18 +264,17 @@ python ingest.py
 
 ## Truy xuất và tạo câu trả lời
 
-Tạo `ask.py`. Bước đầu tiên biến câu hỏi thành vector cùng model với tài liệu. Sau đó RPC trả về tối đa năm đoạn có similarity từ `0.35` trở lên.
+Tạo `ask.py`. Bước đầu tiên biến câu hỏi thành vector bằng chính model local đã dùng khi lập chỉ mục. Sau đó RPC trả về tối đa năm đoạn có similarity từ `0.35` trở lên.
 
 ```python
 import os
 
 from dotenv import load_dotenv
-from openai import OpenAI
+from ollama import chat, embed
 from supabase import create_client
 
 load_dotenv()
 
-openai_client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 supabase = create_client(
     os.environ["SUPABASE_URL"],
     os.environ["SUPABASE_SERVICE_ROLE_KEY"],
@@ -281,16 +282,14 @@ supabase = create_client(
 
 
 def answer_question(question: str) -> str:
-    embedding_model = os.environ.get(
-        "OPENAI_EMBEDDING_MODEL", "text-embedding-3-small"
-    )
-    chat_model = os.environ.get("OPENAI_CHAT_MODEL", "gpt-4.1-mini")
+    embedding_model = os.environ.get("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text")
+    chat_model = os.environ.get("OLLAMA_CHAT_MODEL", "llama3.2:3b")
 
-    embedding_response = openai_client.embeddings.create(
+    embedding_response = embed(
         model=embedding_model,
         input=question,
     )
-    query_embedding = embedding_response.data[0].embedding
+    query_embedding = embedding_response.embeddings[0]
 
     result = supabase.rpc(
         "match_documents",
@@ -309,9 +308,8 @@ def answer_question(question: str) -> str:
         f"[Nguồn: {row['source']}#chunk-{row['chunk_index']}]\n{row['content']}"
         for row in documents
     )
-    response = openai_client.chat.completions.create(
+    response = chat(
         model=chat_model,
-        temperature=0.2,
         messages=[
             {
                 "role": "system",
@@ -327,8 +325,9 @@ def answer_question(question: str) -> str:
                 "content": f"Tài liệu tham khảo:\n{context}\n\nCâu hỏi: {question}",
             },
         ],
+        options={"temperature": 0.2},
     )
-    return response.choices[0].message.content or "Mô hình không tạo được câu trả lời."
+    return response.message.content or "Mô hình không tạo được câu trả lời."
 
 
 if __name__ == "__main__":
